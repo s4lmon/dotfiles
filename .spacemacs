@@ -2,6 +2,8 @@
 ;; This file is loaded by Spacemacs at startup.
 ;; It must be stored in your home directory.
 
+;; launch-prefix="gdb -ex run \--args"
+
 (defun dotspacemacs/layers ()
   "Layer configuration:
 This function should only modify configuration layer settings."
@@ -45,6 +47,7 @@ This function should only modify configuration layer settings."
      ;; python
      (rust :variables rust-backend 'racer)
      html
+     docker
      yaml
      javascript
      java
@@ -57,6 +60,8 @@ This function should only modify configuration layer settings."
      ;; ----------------------------------------------------------------
      helm
      auto-completion
+     (cmake :variables
+                           cmake-backend 'lsp)
      (c-c++ :variables
             c-c++-backend 'lsp-clangd
             c-c++-enable-clang-support t
@@ -276,7 +281,7 @@ It should only modify the values of Spacemacs settings."
    ;; Point size is recommended, because it's device independent. (default 10.0)
    dotspacemacs-default-font '("Fira Code"
                                :size 11.0
-                               :weight light
+                               :weight normal
                                :width normal)
 
    ;; The leader key (default "SPC")
@@ -433,7 +438,7 @@ It should only modify the values of Spacemacs settings."
    ;;   :size-limit-kb 1000)
    ;; When used in a plist, `visual' takes precedence over `relative'.
    ;; (default nil)
-   dotspacemacs-line-numbers nil
+   dotspacemacs-line-numbers t
 
    ;; Code folding method. Possible values are `evil', `origami' and `vimish'.
    ;; (default 'evil)
@@ -458,9 +463,11 @@ It should only modify the values of Spacemacs settings."
    ;; emphasis the current one). (default 'all)
    dotspacemacs-highlight-delimiters 'all
 
+   ;; Changed 0221128
    ;; If non-nil, start an Emacs server if one is not already running.
+
    ;; (default nil)
-   dotspacemacs-enable-server nil
+   dotspacemacs-enable-server t
 
    ;; Set the emacs server socket location.
    ;; If nil, uses whatever the Emacs default is, otherwise a directory path
@@ -471,7 +478,7 @@ It should only modify the values of Spacemacs settings."
 
    ;; If non-nil, advise quit functions to keep server open when quitting.
    ;; (default nil)
-   dotspacemacs-persistent-server nil
+   dotspacemacs-persistent-server t
 
    ;; List of search tool executable names. Spacemacs uses the first installed
    ;; tool of the list. Supported tools are `rg', `ag', `pt', `ack' and `grep'.
@@ -582,8 +589,16 @@ before packages are loaded."
   (add-to-list 'projectile-other-file-alist '("cxx" . ("h" "hxx" "ixx")))
   (add-to-list 'projectile-other-file-alist '("h" . ("c" "cpp" "cxx" "ipp" "hpp" "m" "mm")))
 
+  (add-to-list 'auto-mode-alist '("\\.launch\\'" . xml-mode)) 
+
   (spacemacs/toggle-truncate-lines-on)
   dotspacemacs-whitespace-cleanup 'all
+  ;; (evil-define-key 'normal global-map (kbd "j") (kbd "gj"))
+  ;; (evil-define-key 'normal global-map (kbd "k") (kbd "gk"))
+  ;; (evil-leader/set-key
+  ;;   "q q" ‘spacemacs/frame-killer)
+  ;; From this
+  ;;https://medium.com/@bobbypriambodo/blazingly-fast-spacemacs-with-persistent-server-92260f2118b7
 )
 
 
@@ -608,12 +623,15 @@ This function is called at the very end of Spacemacs initialization."
  '(beacon-color "#c82829")
  '(company-quickhelp-color-background "#b0b0b0")
  '(company-quickhelp-color-foreground "#232333")
+ '(custom-safe-themes
+   '("f0eb51d80f73b247eb03ab216f94e9f86177863fb7e48b44aacaddbfe3357cf1" "66132890ee1f884b4f8e901f0c61c5ed078809626a547dbefbb201f900d03fd8" "1cd4df5762b3041a09609b5fb85933bb3ae71f298c37ba9e14804737e867faf3" "f458b92de1f6cf0bdda6bce23433877e94816c3364b821eb4ea9852112f5d7dc" "8b6506330d63e7bc5fb940e7c177a010842ecdda6e1d1941ac5a81b13191020e" default))
  '(evil-want-Y-yank-to-eol nil)
  '(exwm-floating-border-color "#c6bdb2")
  '(fci-rule-character-color "#d9d9d9")
  '(fci-rule-color "#605a52" t)
  '(flycheck-color-mode-line-face-to-color 'mode-line-buffer-id)
  '(frame-background-mode 'light)
+ '(fringe-mode 6 nil (fringe))
  '(highlight-tail-colors ((("#ebe8df") . 0) (("#e7e8e2") . 20)))
  '(hl-todo-keyword-faces
    '(("TODO" . "#dc752f")
@@ -635,11 +653,14 @@ This function is called at the very end of Spacemacs initialization."
  '(jdee-db-active-breakpoint-face-colors (cons "#f1ece4" "#7382a0"))
  '(jdee-db-requested-breakpoint-face-colors (cons "#f1ece4" "#81895d"))
  '(jdee-db-spec-breakpoint-face-colors (cons "#f1ece4" "#b9a992"))
+ '(linum-format " %7d ")
+ '(nrepl-message-colors
+   '("#00afef" "#778ca3" "#009c9f" "#778ca3" "#005cc5" "#fa1090" "#009c9f" "#778ca3"))
  '(objed-cursor-color "#955f5f")
  '(org-fontify-done-headline nil)
  '(org-fontify-todo-headline nil)
  '(package-selected-packages
-   '(doom-modeline shrink-path nano-theme cargo flycheck-rust racer ron-mode rust-mode solo-jazz-theme toml-mode treemacs-all-the-icons smeargle orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-mime org-download magit-gitflow magit-popup htmlize helm-gitignore gnuplot gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link flyspell-correct-helm flyspell-correct evil-magit magit transient git-commit with-editor auto-dictionary spinner evil-visualstar evil-visual-mark-mode evil-tutor evil-surround evil-mc evil-matchit evil-lisp-state evil-indent-plus evil-iedit-state iedit evil-exchange evil-ediff evil-args evil-anzu anzu evil undo-tree adaptive-wrap ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline smartparens restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint indent-guide hydra lv hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-projectile projectile pkg-info epl helm-mode-manager helm-make helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-unimpaired evil-search-highlight-persist highlight evil-numbers evil-nerd-commenter evil-escape goto-chg eval-sexp-fu elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent ace-window ace-link ace-jump-helm-line helm avy helm-core popup async))
+   '(nano-modeline cmake-mode helm-ctest doom-modeline shrink-path nano-theme cargo flycheck-rust racer ron-mode rust-mode solo-jazz-theme toml-mode treemacs-all-the-icons smeargle orgit org-projectile org-category-capture org-present org-pomodoro alert log4e gntp org-mime org-download magit-gitflow magit-popup htmlize helm-gitignore gnuplot gitignore-mode gitconfig-mode gitattributes-mode git-timemachine git-messenger git-link flyspell-correct-helm flyspell-correct evil-magit magit transient git-commit with-editor auto-dictionary spinner evil-visualstar evil-visual-mark-mode evil-tutor evil-surround evil-mc evil-matchit evil-lisp-state evil-indent-plus evil-iedit-state iedit evil-exchange evil-ediff evil-args evil-anzu anzu evil undo-tree adaptive-wrap ws-butler winum which-key volatile-highlights vi-tilde-fringe uuidgen use-package toc-org spaceline powerline smartparens restart-emacs request rainbow-delimiters popwin persp-mode pcre2el paradox org-plus-contrib org-bullets open-junk-file neotree move-text macrostep lorem-ipsum linum-relative link-hint indent-guide hydra lv hungry-delete hl-todo highlight-parentheses highlight-numbers parent-mode highlight-indentation helm-themes helm-swoop helm-projectile projectile pkg-info epl helm-mode-manager helm-make helm-flx helm-descbinds helm-ag google-translate golden-ratio flx-ido flx fill-column-indicator fancy-battery eyebrowse expand-region exec-path-from-shell evil-unimpaired evil-search-highlight-persist highlight evil-numbers evil-nerd-commenter evil-escape goto-chg eval-sexp-fu elisp-slime-nav dumb-jump f dash s diminish define-word column-enforce-mode clean-aindent-mode bind-map bind-key auto-highlight-symbol auto-compile packed aggressive-indent ace-window ace-link ace-jump-helm-line helm avy helm-core popup async))
  '(pdf-view-midnight-colors (cons "#605a52" "#f7f3ee"))
  '(pos-tip-foreground-color "#4b5254")
  '(rustic-ansi-faces
