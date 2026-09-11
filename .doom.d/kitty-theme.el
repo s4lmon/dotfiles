@@ -1,0 +1,80 @@
+;;; kitty-theme.el --- export the active Doom theme as a kitty colour scheme -*- lexical-binding: t; -*-
+
+(defvar hasan/kitty-dir (expand-file-name "~/.config/kitty/")
+  "Kitty config directory; themes are written to its themes/ subdirectory.")
+
+(defun hasan/kt--color (&rest names)
+  "First defined colour among NAMES in the active Doom theme."
+  (seq-some (lambda (n) (ignore-errors (doom-color n))) names))
+
+(defun hasan/kt--palette ()
+  "Kitty setting -> hex colour alist derived from the current Doom palette."
+  (let* ((bg (doom-color 'bg)) (fg (doom-color 'fg))
+         (light (> (apply #'+ (doom-name-to-rgb bg)) 1.5))
+         (peach (hasan/kt--color 'peach 'orange))
+         (coral (hasan/kt--color 'coral 'red))
+         (sky (hasan/kt--color 'sky 'cyan))
+         (mauve (hasan/kt--color 'mauve 'magenta))
+         (bright (lambda (c) (if light (doom-lighten c 0.2) (doom-lighten c 0.15)))))
+    `((background . ,bg)
+      (foreground . ,fg)
+      (cursor . ,(doom-darken coral 0.1))
+      (cursor_text_color . ,bg)
+      (selection_background . ,peach)
+      (selection_foreground . ,fg)
+      (url_color . ,(doom-color 'blue))
+      (active_tab_background . ,peach)
+      (active_tab_foreground . ,fg)
+      (inactive_tab_background . ,(doom-color 'base2))
+      (inactive_tab_foreground . ,(doom-color 'base5))
+      (tab_bar_background . ,(doom-color 'base1))
+      (active_border_color . ,coral)
+      (inactive_border_color . ,(doom-color 'base3))
+      (color0 . ,(if light (doom-color 'base7) (doom-color 'base0)))
+      (color8 . ,(doom-color 'base5))
+      (color1 . ,(doom-color 'red))
+      (color9 . ,(doom-darken coral 0.1))
+      (color2 . ,(doom-color 'green))
+      (color10 . ,(funcall bright (doom-color 'green)))
+      (color3 . ,(doom-color 'yellow))
+      (color11 . ,(funcall bright (doom-color 'yellow)))
+      (color4 . ,(doom-color 'blue))
+      (color12 . ,(funcall bright (doom-color 'blue)))
+      (color5 . ,(doom-color 'magenta))
+      (color13 . ,mauve)
+      (color6 . ,(doom-color 'cyan))
+      (color14 . ,sky)
+      (color7 . ,(if light (doom-color 'base3) (doom-color 'base7)))
+      (color15 . ,(if light bg fg)))))
+
+(defun hasan/kt--set-include (theme)
+  "Point kitty.conf's theme include at THEME."
+  (let ((conf (expand-file-name "kitty.conf" hasan/kitty-dir))
+        (line (format "include themes/%s.conf" theme)))
+    (with-temp-buffer
+      (insert-file-contents conf)
+      (goto-char (point-min))
+      (if (re-search-forward "^include themes/.*\\.conf$" nil t)
+          (replace-match line t t)
+        (insert line "\n"))
+      (write-region nil nil conf))))
+
+(defun hasan/kitty-theme-export ()
+  "Write the active Doom theme to kitty's themes dir, select it and reload kitty."
+  (interactive)
+  (unless doom-theme (user-error "No Doom theme loaded"))
+  (let* ((name (symbol-name doom-theme))
+         (out (expand-file-name (format "themes/%s.conf" name) hasan/kitty-dir)))
+    (make-directory (file-name-directory out) t)
+    (with-temp-file out
+      (insert (format "# %s — generated from the Doom theme by kitty-theme.el; do not edit\n\n" name))
+      (dolist (kv (hasan/kt--palette))
+        (insert (format "%-24s %s\n" (car kv) (cdr kv)))))
+    (hasan/kt--set-include name)
+    (call-process "pkill" nil nil nil "-USR1" "-x" "kitty")
+    (message "kitty theme written: %s" out)))
+
+(add-hook 'doom-load-theme-hook #'hasan/kitty-theme-export)
+
+(provide 'kitty-theme)
+;;; kitty-theme.el ends here

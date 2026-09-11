@@ -4,6 +4,9 @@
       doom-themes-padded-modeline t
       doom-font (font-spec :family "monospace" :size 14))
 
+;; keep kitty's colours in lockstep with whatever theme Emacs is using
+(load! "kitty-theme")
+
 ;; major-mode leader on "," like Spacemacs
 (setq doom-localleader-key ","
       doom-localleader-alt-key "M-,")
