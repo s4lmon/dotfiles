@@ -112,7 +112,8 @@ Can be an integer to determine the exact padding."
    (bg         (list bg-hex "white"   "white"        ))
    (fg         (list fg-hex "#3a3a3a" "black"        ))
 
-   (bg-alt     (list (funcall mix 0.04) "white"   "white"        ))
+   ;; solaire (magit, popups, dashboard) must read as a different pane
+   (bg-alt     (list (funcall mix 0.09) "white"   "white"        ))
    (fg-alt     (list (funcall shade 0.58 3.0) "#8a8a8a" "brightblack"  ))
 
    (base0      (list (if dark (doom-darken bg-hex 0.3) (doom-lighten bg-hex 0.5)) "#ffffff" "white"))
