@@ -1,0 +1,21 @@
+[credential "https://github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !/usr/bin/gh auth git-credential
+[user]
+	email = mail@hasanamin.com
+	name = Hasan Amin
+[credential "https://gitlab.werewolf-banded.ts.net"]
+	helper = !/home/hasan/.local/share/mise/shims/glab auth git-credential
+[rerere]
+	enabled = true
+[gitlab "gitlab.werewolf-banded.ts.net/api/v4"]
+	user = hamin
+[pull]
+	rebase = true
+[rebase]
+	autoStash = true
+[fetch]
+	prune = true
