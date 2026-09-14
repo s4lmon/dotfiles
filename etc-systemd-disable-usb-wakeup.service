@@ -1,0 +1,9 @@
+[Unit]
+Description=Disable USB/Thunderbolt ACPI wakeup sources (prevents spurious suspend wakes)
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for d in XHC0 XHC1 XHC3 XHC4 NHI0; do grep -q "^$d.*enabled" /proc/acpi/wakeup && echo $d > /proc/acpi/wakeup; done; exit 0'
+
+[Install]
+WantedBy=multi-user.target
