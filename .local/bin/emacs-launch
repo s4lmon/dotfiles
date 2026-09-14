@@ -1,0 +1,11 @@
+#!/bin/sh
+# profile-aware emacs launcher; switch via ~/.config/emacs-profile (doom | spacemacs)
+profile=$(cat "$HOME/.config/emacs-profile" 2>/dev/null)
+case "${profile:-doom}" in
+  doom*) dir="$HOME/doom-emacs"; sock=doom ;;
+  *)     dir="$HOME/.emacs.d";   sock=spacemacs ;;
+esac
+emacsclient -s "$sock" --eval t >/dev/null 2>&1 ||
+  /usr/bin/emacs --daemon="$sock" --init-directory "$dir"
+[ "$1" = "--ensure-daemon" ] && exit 0
+exec emacsclient -c -s "$sock" "$@"

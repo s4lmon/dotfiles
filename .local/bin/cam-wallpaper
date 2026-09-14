@@ -1,0 +1,62 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+STREAM=${1:-polishing_overhead}
+OUTPUT=${2:-*}
+ENV_FILE=$HOME/dev/arc/antimatter/sentinel/.env
+REGION=us-east-1
+
+if [[ ! -r $ENV_FILE ]]; then
+  echo "missing creds file: $ENV_FILE" >&2
+  exit 1
+fi
+
+set -a
+# shellcheck disable=SC1090
+source <(grep -E '^AWS_KINESIS_(ACCESS_KEY_ID|SECRET_ACCESS_KEY)=' "$ENV_FILE")
+set +a
+export AWS_ACCESS_KEY_ID="$AWS_KINESIS_ACCESS_KEY_ID"
+export AWS_SECRET_ACCESS_KEY="$AWS_KINESIS_SECRET_ACCESS_KEY"
+unset AWS_PROFILE AWS_SESSION_TOKEN || true
+
+get_url() {
+  local endpoint
+  endpoint=$(aws kinesisvideo get-data-endpoint \
+    --stream-name "$STREAM" \
+    --api-name GET_HLS_STREAMING_SESSION_URL \
+    --region "$REGION" \
+    --query DataEndpoint --output text)
+  aws kinesis-video-archived-media get-hls-streaming-session-url \
+    --stream-name "$STREAM" \
+    --playback-mode LIVE \
+    --expires 18000 \
+    --endpoint-url "$endpoint" \
+    --region "$REGION" \
+    --query HLSStreamingSessionURL --output text
+}
+
+cleanup() {
+  [[ -n ${MPID:-} ]] && kill "$MPID" 2>/dev/null || true
+}
+trap cleanup EXIT INT TERM
+
+MPV_OPTS="no-audio no-osc no-input-default-bindings loop hls-bitrate=max cache=yes msg-level=all=warn"
+
+while true; do
+  URL=$(get_url)
+  echo "[$(date -Is)] launching mpvpaper for $STREAM" >&2
+  mpvpaper -o "$MPV_OPTS" "$OUTPUT" "$URL" &
+  MPID=$!
+  refresh_at=$(( $(date +%s) + 16200 ))  # 4h30m before 5h HLS session expiry
+  while kill -0 "$MPID" 2>/dev/null && [[ $(date +%s) -lt $refresh_at ]]; do
+    sleep 10
+  done
+  if kill -0 "$MPID" 2>/dev/null; then
+    echo "[$(date -Is)] refresh window hit, restarting" >&2
+    kill "$MPID" 2>/dev/null || true
+    wait "$MPID" 2>/dev/null || true
+  else
+    echo "[$(date -Is)] mpvpaper exited early, respawning in 3s" >&2
+    sleep 3
+  fi
+done

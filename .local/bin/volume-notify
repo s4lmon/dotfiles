@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# Get current volume and mute status
+volume=$(wpctl get-volume @DEFAULT_AUDIO_SINK@)
+muted=$(echo "$volume" | grep -o "MUTED")
+volume_percent=$(echo "$volume" | awk '{print int($2 * 100)}')
+
+# Determine icon and message
+if [ -n "$muted" ]; then
+    icon="audio-volume-muted"
+    message="Volume: Muted"
+else
+    if [ "$volume_percent" -ge 70 ]; then
+        icon="audio-volume-high"
+    elif [ "$volume_percent" -ge 30 ]; then
+        icon="audio-volume-medium"
+    else
+        icon="audio-volume-low"
+    fi
+    message="Volume: ${volume_percent}%"
+fi
+
+# Send notification
+notify-send -u low -t 2000 -h string:x-canonical-private-synchronous:volume -h int:value:"$volume_percent" "$message" -i "$icon"

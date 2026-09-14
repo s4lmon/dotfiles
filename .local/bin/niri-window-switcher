@@ -1,0 +1,19 @@
+#!/bin/bash
+# niri window switcher using fuzzel
+
+# Get list of windows with IDs, app names, and titles
+windows=$(niri msg --json windows | jq -r '.[] | "\(.id)\t\(.app_id): \(.title)"')
+
+# Extract display text (everything after tab)
+display=$(echo "$windows" | cut -f2-)
+
+# Show in fuzzel and get selection
+selected=$(echo "$display" | fuzzel --dmenu --prompt "Switch to: ")
+
+# Find the window ID for the selected window
+window_id=$(echo "$windows" | grep -F "$selected" | head -1 | cut -f1)
+
+# Focus the selected window
+if [ -n "$window_id" ]; then
+    niri msg action focus-window --id "$window_id"
+fi
