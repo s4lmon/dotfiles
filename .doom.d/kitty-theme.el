@@ -1,16 +1,22 @@
-;;; kitty-theme.el --- export the active Doom theme as a kitty colour scheme -*- lexical-binding: t; -*-
+;;; kitty-theme.el --- export the active Doom theme to kitty and starship -*- lexical-binding: t; -*-
 
 (defvar hasan/kitty-dir (expand-file-name "~/.config/kitty/")
   "Kitty config directory; themes are written to its themes/ subdirectory.")
+
+(defvar hasan/starship-conf (expand-file-name "~/.config/starship.toml")
+  "Starship config; a palette named after the Doom theme is maintained inside it.")
 
 (defun hasan/kt--color (&rest names)
   "First defined colour among NAMES in the active Doom theme."
   (seq-some (lambda (n) (ignore-errors (doom-color n))) names))
 
+(defun hasan/kt--light-p (bg)
+  (> (apply #'+ (doom-name-to-rgb bg)) 1.5))
+
 (defun hasan/kt--palette ()
   "Kitty setting -> hex colour alist derived from the current Doom palette."
   (let* ((bg (doom-color 'bg)) (fg (doom-color 'fg))
-         (light (> (apply #'+ (doom-name-to-rgb bg)) 1.5))
+         (light (hasan/kt--light-p bg))
          (peach (hasan/kt--color 'peach 'orange))
          (coral (hasan/kt--color 'coral 'red))
          (sky (hasan/kt--color 'sky 'cyan))
@@ -47,6 +53,39 @@
       (color7 . ,(if light (doom-color 'base3) (doom-color 'base7)))
       (color15 . ,(if light bg fg)))))
 
+(defun hasan/kt--starship-palette ()
+  "Starship palette name -> hex alist derived from the current Doom palette.
+On light themes segment backgrounds are pale warm tints so dark text stays
+legible; text_* entries are the untinted colours for glyphs drawn on bg."
+  (let* ((bg (doom-color 'bg)) (fg (doom-color 'fg))
+         (light (hasan/kt--light-p bg))
+         (tint (lambda (c a) (if light (doom-blend c bg a) c)))
+         (pick (lambda (brand base a)
+                 (or (hasan/kt--color brand) (funcall tint (doom-color base) a))))
+         (coral (funcall pick 'coral 'red 0.5))
+         (peach (funcall pick 'peach 'orange 0.4))
+         (rose (funcall pick 'rose 'magenta 0.4))
+         (mauve (funcall pick 'mauve 'violet 0.6)))
+    `((red . ,coral)
+      (peach . ,peach)
+      (yellow . ,(funcall tint (doom-color 'yellow) 0.3))
+      (green . ,(funcall tint rose 0.6))
+      (teal . ,(funcall tint peach 0.6))
+      (sapphire . ,(funcall tint coral 0.4))
+      (blue . ,(funcall tint peach 0.6))
+      (lavender . ,(funcall tint mauve 0.4))
+      (mauve . ,mauve)
+      (text_red . ,(doom-color 'red))
+      (text_green . ,(doom-color 'green))
+      (text_yellow . ,(doom-color 'yellow))
+      (text_lavender . ,(doom-color 'violet))
+      (text . ,fg)
+      (subtext0 . ,(doom-color 'base5))
+      (overlay0 . ,(doom-color 'base4))
+      (surface0 . ,(doom-color 'base2))
+      (base . ,bg)
+      (crust . ,(if light fg bg)))))
+
 (defun hasan/kt--set-include (theme)
   "Point kitty.conf's theme include at THEME."
   (let ((conf (expand-file-name "kitty.conf" hasan/kitty-dir))
@@ -59,20 +98,45 @@
         (insert line "\n"))
       (write-region nil nil conf))))
 
-(defun hasan/kitty-theme-export ()
-  "Write the active Doom theme to kitty's themes dir, select it and reload kitty."
-  (interactive)
-  (unless doom-theme (user-error "No Doom theme loaded"))
-  (let* ((name (symbol-name doom-theme))
-         (out (expand-file-name (format "themes/%s.conf" name) hasan/kitty-dir)))
+(defun hasan/kt--write-kitty (name)
+  (let ((out (expand-file-name (format "themes/%s.conf" name) hasan/kitty-dir)))
     (make-directory (file-name-directory out) t)
     (with-temp-file out
       (insert (format "# %s — generated from the Doom theme by kitty-theme.el; do not edit\n\n" name))
       (dolist (kv (hasan/kt--palette))
         (insert (format "%-24s %s\n" (car kv) (cdr kv)))))
     (hasan/kt--set-include name)
+    out))
+
+(defun hasan/kt--write-starship (name)
+  "Replace the [palettes.NAME] table in starship.toml and select it."
+  (with-temp-buffer
+    (insert-file-contents hasan/starship-conf)
+    (goto-char (point-min))
+    (if (re-search-forward "^palette = .*$" nil t)
+        (replace-match (format "palette = '%s'" name) t t)
+      (insert (format "palette = '%s'\n" name)))
+    (goto-char (point-min))
+    (when (re-search-forward (format "^\\[palettes\\.%s\\]\n" (regexp-quote name)) nil t)
+      (delete-region (match-beginning 0)
+                     (if (re-search-forward "^\\[" nil t) (match-beginning 0) (point-max))))
+    (goto-char (point-max))
+    (skip-chars-backward "\n")
+    (delete-region (point) (point-max))
+    (insert (format "\n\n[palettes.%s]\n# generated from the Doom theme by kitty-theme.el; do not edit\n" name))
+    (dolist (kv (hasan/kt--starship-palette))
+      (insert (format "%s = \"%s\"\n" (car kv) (cdr kv))))
+    (write-region nil nil hasan/starship-conf)))
+
+(defun hasan/kitty-theme-export ()
+  "Write the active Doom theme to kitty and starship, then reload kitty."
+  (interactive)
+  (unless doom-theme (user-error "No Doom theme loaded"))
+  (let* ((name (symbol-name doom-theme))
+         (out (hasan/kt--write-kitty name)))
+    (hasan/kt--write-starship name)
     (call-process "pkill" nil nil nil "-USR1" "-x" "kitty")
-    (message "kitty theme written: %s" out)))
+    (message "kitty + starship themes written: %s" out)))
 
 (add-hook 'doom-load-theme-hook #'hasan/kitty-theme-export)
 
