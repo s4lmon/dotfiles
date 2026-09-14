@@ -1,7 +1,10 @@
-;;; kitty-theme.el --- export the active Doom theme to kitty and starship -*- lexical-binding: t; -*-
+;;; kitty-theme.el --- export the active Doom theme to kitty, starship and tmux -*- lexical-binding: t; -*-
 
 (defvar hasan/kitty-dir (expand-file-name "~/.config/kitty/")
   "Kitty config directory; themes are written to its themes/ subdirectory.")
+
+(defvar hasan/tmux-theme (expand-file-name "~/.config/tmux/theme.conf")
+  "Generated tmux colour file, sourced from .tmux.conf.")
 
 (defvar hasan/starship-conf (expand-file-name "~/.config/starship.toml")
   "Starship config; a palette named after the Doom theme is maintained inside it.")
@@ -108,6 +111,31 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
     (hasan/kt--set-include name)
     out))
 
+(defun hasan/kt--write-tmux (name)
+  "Write tmux status and border colours from the kitty palette."
+  (let* ((p (hasan/kt--palette))
+         (c (lambda (k) (alist-get k p)))
+         (accent (funcall c (quote active_border_color)))
+         (tab-bg (funcall c (quote active_tab_background)))
+         (tab-fg (funcall c (quote active_tab_foreground)))
+         (dark (funcall c (quote color0))))
+    (make-directory (file-name-directory hasan/tmux-theme) t)
+    (with-temp-file hasan/tmux-theme
+      (insert (format "# %s — generated from the Doom theme by kitty-theme.el; do not edit\n" name))
+      (dolist (line
+               (list
+                (format "set -g status-style \"bg=%s,fg=%s\"" accent dark)
+                (format "set -g status-left-style \"bg=%s,fg=%s,bold\"" tab-bg tab-fg)
+                (format "set -g status-right-style \"bg=%s,fg=%s\"" accent dark)
+                (format "setw -g window-status-current-style \"bg=%s,fg=%s,bold\"" tab-bg tab-fg)
+                (format "set -g pane-border-style \"fg=%s\"" (funcall c (quote inactive_border_color)))
+                (format "set -g pane-active-border-style \"fg=%s\"" accent)
+                (format "set -g message-style \"bg=%s,fg=%s\"" tab-bg tab-fg)
+                (format "set -g mode-style \"bg=%s,fg=%s\""
+                        (funcall c (quote selection_background)) (funcall c (quote selection_foreground)))))
+        (insert line "\n")))
+    (call-process "tmux" nil nil nil "source-file" (expand-file-name "~/.tmux.conf"))))
+
 (defun hasan/kt--write-starship (name)
   "Replace the [palettes.NAME] table in starship.toml and select it."
   (with-temp-buffer
@@ -135,8 +163,9 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
   (let* ((name (symbol-name doom-theme))
          (out (hasan/kt--write-kitty name)))
     (hasan/kt--write-starship name)
+    (hasan/kt--write-tmux name)
     (call-process "pkill" nil nil nil "-USR1" "-x" "kitty")
-    (message "kitty + starship themes written: %s" out)))
+    (message "kitty + starship + tmux themes written: %s" out)))
 
 (add-hook 'doom-load-theme-hook #'hasan/kitty-theme-export)
 
