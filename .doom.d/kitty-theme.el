@@ -115,9 +115,9 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
   "Write tmux status and border colours from the kitty palette."
   (let* ((p (hasan/kt--palette))
          (c (lambda (k) (alist-get k p)))
-         (accent (funcall c (quote active_border_color)))
-         (tab-bg (funcall c (quote active_tab_background)))
-         (tab-fg (funcall c (quote active_tab_foreground)))
+         (accent (funcall c 'active_border_color))
+         (tab-bg (funcall c 'active_tab_background))
+         (tab-fg (funcall c 'active_tab_foreground))
          (dark (funcall c (quote color0))))
     (make-directory (file-name-directory hasan/tmux-theme) t)
     (with-temp-file hasan/tmux-theme
@@ -128,11 +128,11 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
                 (format "set -g status-left-style \"bg=%s,fg=%s,bold\"" tab-bg tab-fg)
                 (format "set -g status-right-style \"bg=%s,fg=%s\"" accent dark)
                 (format "setw -g window-status-current-style \"bg=%s,fg=%s,bold\"" tab-bg tab-fg)
-                (format "set -g pane-border-style \"fg=%s\"" (funcall c (quote inactive_border_color)))
+                (format "set -g pane-border-style \"fg=%s\"" (funcall c 'inactive_border_color))
                 (format "set -g pane-active-border-style \"fg=%s\"" accent)
                 (format "set -g message-style \"bg=%s,fg=%s\"" tab-bg tab-fg)
                 (format "set -g mode-style \"bg=%s,fg=%s\""
-                        (funcall c (quote selection_background)) (funcall c (quote selection_foreground)))))
+                        (funcall c 'selection_background) (funcall c 'selection_foreground))))
         (insert line "\n")))
     (call-process "tmux" nil nil nil "source-file" (expand-file-name "~/.tmux.conf"))))
 
