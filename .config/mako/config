@@ -1,0 +1,29 @@
+# Mako notification daemon configuration
+
+# Set default timeout to 3 seconds (3000 milliseconds)
+default-timeout=3000
+
+# Position notifications at top right
+anchor=top-right
+
+# Styling to match your pink/purple theme
+background-color=#2d2d2d
+text-color=#ffffff
+border-color=#ff1493
+border-size=2
+border-radius=8
+
+# Font
+font=monospace 11
+
+# Padding
+padding=15
+
+# Margin between notifications
+margin=10
+
+# Maximum visible notifications
+max-visible=5
+
+# Sort notifications by urgency
+sort=-time
