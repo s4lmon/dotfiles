@@ -104,6 +104,8 @@ Can be an integer to determine the exact padding."
    (dark       (< (sunset-light--luminance bg-hex) 0.18))
    (fg-hex     (sunset-light--readable (if dark "#fdf8f5" "#3b3238") bg-hex 4.5))
    (mix        (lambda (a) (doom-blend fg-hex bg-hex a)))
+   ;; mid greys sink into mid-tone twilight bgs, so hold them to a floor contrast
+   (shade      (lambda (a target) (sunset-light--readable (funcall mix a) bg-hex target)))
    ;; text accents keep their hue but are pushed away from the bg until legible
    (accent     (lambda (light-hex dark-hex) (sunset-light--readable (if dark dark-hex light-hex) bg-hex 3.5)))
 
@@ -111,15 +113,15 @@ Can be an integer to determine the exact padding."
    (fg         (list fg-hex "#3a3a3a" "black"        ))
 
    (bg-alt     (list (funcall mix 0.04) "white"   "white"        ))
-   (fg-alt     (list (funcall mix 0.58) "#8a8a8a" "brightblack"  ))
+   (fg-alt     (list (funcall shade 0.58 3.0) "#8a8a8a" "brightblack"  ))
 
    (base0      (list (if dark (doom-darken bg-hex 0.3) (doom-lighten bg-hex 0.5)) "#ffffff" "white"))
    (base1      (list (funcall mix 0.04) "#f0f0f0" "brightblack"  ))
    (base2      (list (funcall mix 0.08) "#e5e5e5" "brightblack"  ))
    (base3      (list (funcall mix 0.14) "#d0d0d0" "brightblack"  ))
-   (base4      (list (funcall mix 0.36) "#a8a8a8" "brightblack"  ))
-   (base5      (list (funcall mix 0.58) "#808080" "brightblack"  ))
-   (base6      (list (funcall mix 0.82) "#5a5a5a" "brightblack"  ))
+   (base4      (list (funcall shade 0.36 2.0) "#a8a8a8" "brightblack"  ))
+   (base5      (list (funcall shade 0.58 3.0) "#808080" "brightblack"  ))
+   (base6      (list (funcall shade 0.82 4.5) "#5a5a5a" "brightblack"  ))
    (base7      (list fg-hex "#3a3a3a" "brightblack"  ))
    (base8      (list (if dark "#ffffff" "#241d21") "black"   "black"        ))
 
