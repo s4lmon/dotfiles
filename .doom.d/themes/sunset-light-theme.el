@@ -30,29 +30,98 @@ Can be an integer to determine the exact padding."
 
 
 ;;
+;;; Time of day
+
+(defcustom sunset-light-darkness nil
+  "Override for the darkness read from `sunset-light-darkness-file'."
+  :group 'sunset-light-theme
+  :type '(choice (const nil) float))
+
+(defcustom sunset-light-darkness-file (expand-file-name "~/.local/state/sun-theme/darkness")
+  "File holding a 0..1 darkness written by sun-theme: 0 at solar noon, 1 at solar midnight."
+  :group 'sunset-light-theme
+  :type 'file)
+
+(defconst sunset-light--bg-keyframes
+  '((0.0 . "#fdf8f5") (0.35 . "#f6bdb3") (0.65 . "#6b5570") (1.0 . "#1c2540"))
+  "Background across the day: midday, sunset, deep dusk, midnight.")
+
+(defun sunset-light--darkness ()
+  (or sunset-light-darkness
+      (ignore-errors
+        (with-temp-buffer
+          (insert-file-contents sunset-light-darkness-file)
+          (min 1.0 (max 0.0 (float (string-to-number (buffer-string)))))))
+      0.0))
+
+(defun sunset-light--luminance (hex)
+  "WCAG relative luminance of HEX, 0 (black) to 1 (white)."
+  (let ((lin (lambda (c) (if (<= c 0.03928) (/ c 12.92) (expt (/ (+ c 0.055) 1.055) 2.4)))))
+    (pcase-let ((`(,r ,g ,b) (doom-name-to-rgb hex)))
+      (+ (* 0.2126 (funcall lin r)) (* 0.7152 (funcall lin g)) (* 0.0722 (funcall lin b))))))
+
+(defun sunset-light--contrast (a b)
+  "WCAG contrast ratio between colours A and B."
+  (let ((la (+ (sunset-light--luminance a) 0.05))
+        (lb (+ (sunset-light--luminance b) 0.05)))
+    (/ (max la lb) (min la lb))))
+
+(defun sunset-light--readable (color bg &optional target)
+  "Push COLOR away from BG until it reaches TARGET contrast (default 4.5)."
+  (let ((target (or target 4.5))
+        (dark (< (sunset-light--luminance bg) 0.18))
+        (c color) (i 0))
+    (while (and (< (sunset-light--contrast c bg) target) (< i 24))
+      (setq c (if dark (doom-lighten c 0.08) (doom-darken c 0.08))
+            i (1+ i)))
+    c))
+
+(defun sunset-light--keyframe (frames d)
+  "Piecewise-linear colour from FRAMES at position D."
+  (let ((prev (car frames)) (rest (cdr frames)))
+    (while (and rest (> d (car (car rest))))
+      (setq prev (car rest) rest (cdr rest)))
+    (if (null rest)
+        (cdr prev)
+      (let* ((next (car rest))
+             (span (- (car next) (car prev)))
+             (a (if (zerop span) 1.0 (/ (- d (car prev)) span))))
+        (doom-blend (cdr next) (cdr prev) a)))))
+
+
+;;
 ;;; Theme definition
 
 (def-doom-theme sunset-light
-  "A warm, minimal light theme drawn from a Santorini sunset."
+  "A warm, minimal theme drawn from a Santorini sunset; darkens with the sun."
   :family 'sunset
   :background-mode 'light
 
   ;; name        default   256       16
-  ((bg         '("#fdf8f5" "white"   "white"        ))
-   (fg         '("#3b3238" "#3a3a3a" "black"        ))
+  ((darkness   (sunset-light--darkness))
+   (bg-hex     (sunset-light--keyframe sunset-light--bg-keyframes darkness))
+   ;; below ~0.18 white text out-contrasts dark text
+   (dark       (< (sunset-light--luminance bg-hex) 0.18))
+   (fg-hex     (sunset-light--readable (if dark "#fdf8f5" "#3b3238") bg-hex 4.5))
+   (mix        (lambda (a) (doom-blend fg-hex bg-hex a)))
+   ;; text accents keep their hue but are pushed away from the bg until legible
+   (accent     (lambda (light-hex dark-hex) (sunset-light--readable (if dark dark-hex light-hex) bg-hex 3.5)))
 
-   (bg-alt     '("#f6ede9" "white"   "white"        ))
-   (fg-alt     '("#8d7c84" "#8a8a8a" "brightblack"  ))
+   (bg         (list bg-hex "white"   "white"        ))
+   (fg         (list fg-hex "#3a3a3a" "black"        ))
 
-   (base0      '("#fffcfa" "#ffffff" "white"        ))
-   (base1      '("#f6ede9" "#f0f0f0" "brightblack"  ))
-   (base2      '("#efe2dd" "#e5e5e5" "brightblack"  ))
-   (base3      '("#e2d1cc" "#d0d0d0" "brightblack"  ))
-   (base4      '("#b8a6ab" "#a8a8a8" "brightblack"  ))
-   (base5      '("#8d7c84" "#808080" "brightblack"  ))
-   (base6      '("#5e4f57" "#5a5a5a" "brightblack"  ))
-   (base7      '("#3b3238" "#3a3a3a" "brightblack"  ))
-   (base8      '("#241d21" "black"   "black"        ))
+   (bg-alt     (list (funcall mix 0.04) "white"   "white"        ))
+   (fg-alt     (list (funcall mix 0.58) "#8a8a8a" "brightblack"  ))
+
+   (base0      (list (if dark (doom-darken bg-hex 0.3) (doom-lighten bg-hex 0.5)) "#ffffff" "white"))
+   (base1      (list (funcall mix 0.04) "#f0f0f0" "brightblack"  ))
+   (base2      (list (funcall mix 0.08) "#e5e5e5" "brightblack"  ))
+   (base3      (list (funcall mix 0.14) "#d0d0d0" "brightblack"  ))
+   (base4      (list (funcall mix 0.36) "#a8a8a8" "brightblack"  ))
+   (base5      (list (funcall mix 0.58) "#808080" "brightblack"  ))
+   (base6      (list (funcall mix 0.82) "#5a5a5a" "brightblack"  ))
+   (base7      (list fg-hex "#3a3a3a" "brightblack"  ))
+   (base8      (list (if dark "#ffffff" "#241d21") "black"   "black"        ))
 
    ;; brand palette
    (peach      '("#ffccbb" "#ffd7c4" "brightred"    ))
@@ -61,19 +130,19 @@ Can be an integer to determine the exact padding."
    (sky        '("#9bb9c3" "#a3c1cb" "brightcyan"   ))
    (mauve      '("#947481" "#9c7f8b" "magenta"      ))
 
-   ;; darkened variants readable as text on bg
+   ;; text accents: darkened for a light bg, pastel once the bg turns dark
    (grey       base4)
-   (red        '("#b84f43" "#b04b40" "red"          ))
-   (orange     '("#b8662f" "#b86a33" "brightred"    ))
-   (green      '("#3f7d6e" "#3f7d6e" "green"        ))
-   (teal       '("#44727f" "#457580" "brightgreen"  ))
-   (yellow     '("#a56d2e" "#a56d2e" "yellow"       ))
-   (blue       '("#44727f" "#457580" "brightblue"   ))
-   (dark-blue  '("#2f5560" "#2f5560" "blue"         ))
-   (magenta    '("#7a5868" "#7a5868" "magenta"      ))
-   (violet     '("#5e4453" "#5e4453" "brightmagenta"))
-   (cyan       '("#44727f" "#457580" "brightcyan"   ))
-   (dark-cyan  '("#2f5560" "#2f5560" "cyan"         ))
+   (red        (list (funcall accent "#b84f43" "#f78d7d") "#b04b40" "red"          ))
+   (orange     (list (funcall accent "#b8662f" "#f2a87e") "#b86a33" "brightred"    ))
+   (green      (list (funcall accent "#3f7d6e" "#8cc4b3") "#3f7d6e" "green"        ))
+   (teal       (list (funcall accent "#44727f" "#9bb9c3") "#457580" "brightgreen"  ))
+   (yellow     (list (funcall accent "#a56d2e" "#e6b986") "#a56d2e" "yellow"       ))
+   (blue       (list (funcall accent "#44727f" "#9bb9c3") "#457580" "brightblue"   ))
+   (dark-blue  (list (funcall accent "#2f5560" "#7e9daa") "#2f5560" "blue"         ))
+   (magenta    (list (funcall accent "#7a5868" "#cb9897") "#7a5868" "magenta"      ))
+   (violet     (list (funcall accent "#5e4453" "#c3a6b8") "#5e4453" "brightmagenta"))
+   (cyan       (list (funcall accent "#44727f" "#9bb9c3") "#457580" "brightcyan"   ))
+   (dark-cyan  (list (funcall accent "#2f5560" "#7e9daa") "#2f5560" "cyan"         ))
 
    ;; universal syntax classes — deliberately near-monochrome:
    ;; keywords mauve, types sky, strings coral, everything else fg
@@ -92,7 +161,8 @@ Can be an integer to determine the exact padding."
    (strings        red)
    (variables      fg)
    (numbers        violet)
-   (region         `(,(doom-blend (car peach) (car bg) 0.55) ,@(cdr peach)))
+   ;; a lighter wash on light bgs, a deeper one once text is white
+   (region         `(,(doom-blend (car peach) (car bg) (if dark 0.3 0.55)) ,@(cdr peach)))
    (error          red)
    (warning        yellow)
    (success        green)

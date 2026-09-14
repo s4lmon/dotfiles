@@ -1,0 +1,11 @@
+[Unit]
+Description=Recompute the sun-based colour scheme every 30 minutes
+
+[Timer]
+OnStartupSec=1min
+OnCalendar=*:00/30
+AccuracySec=1min
+Persistent=true
+
+[Install]
+WantedBy=timers.target

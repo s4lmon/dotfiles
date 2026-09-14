@@ -1,0 +1,125 @@
+#!/usr/bin/env -S uv run --script
+# /// script
+# requires-python = ">=3.11"
+# ///
+"""Shift the Doom theme (and via it kitty, starship, tmux) with the sun.
+
+Darkness is 0 at solar noon, 0.35 at sunrise and sunset, 1 at solar midnight,
+cosine-eased in between. Location is read from ~/.config/sun-theme/location as
+"lat lon"; New York is the default.
+"""
+
+import argparse
+import math
+import shutil
+import subprocess
+from datetime import date, datetime, time, timedelta, timezone
+from pathlib import Path
+
+HORIZON_DARKNESS = 0.35
+STATE_FILE = Path.home() / ".local/state/sun-theme/darkness"
+LOCATION_FILE = Path.home() / ".config/sun-theme/location"
+DEFAULT_LOCATION = (40.7128, -74.0060)
+THEME = "sunset-light"
+
+
+def sind(x: float) -> float:
+    return math.sin(math.radians(x))
+
+
+def cosd(x: float) -> float:
+    return math.cos(math.radians(x))
+
+
+def sun_events(day: date, lat: float, lon: float) -> tuple[datetime, datetime, datetime]:
+    """Sunrise, solar noon and sunset in UTC for DAY (NOAA sunrise equation)."""
+    jd = day.toordinal() + 1721424.5
+    n = math.ceil(jd - 2451545.0 + 0.0008)
+    j_star = n - lon / 360
+    m = (357.5291 + 0.98560028 * j_star) % 360
+    c = 1.9148 * sind(m) + 0.02 * sind(2 * m) + 0.0003 * sind(3 * m)
+    lam = (m + c + 180 + 102.9372) % 360
+    j_transit = 2451545.0 + j_star + 0.0053 * sind(m) - 0.0069 * sind(2 * lam)
+    decl = math.degrees(math.asin(sind(lam) * sind(23.4397)))
+    cos_w = (sind(-0.833) - sind(lat) * sind(decl)) / (cosd(lat) * cosd(decl))
+    w = math.degrees(math.acos(max(-1.0, min(1.0, cos_w))))
+
+    def to_dt(j: float) -> datetime:
+        return datetime(2000, 1, 1, 12, tzinfo=timezone.utc) + timedelta(days=j - 2451545.0)
+
+    return to_dt(j_transit - w / 360), to_dt(j_transit), to_dt(j_transit + w / 360)
+
+
+def ease(t: float) -> float:
+    return (1 - math.cos(math.pi * t)) / 2
+
+
+def darkness_at(now: datetime, lat: float, lon: float) -> float:
+    local_day = now.astimezone().date()
+    days = [sun_events(local_day + timedelta(days=k), lat, lon) for k in (-1, 0, 1)]
+    for rise, noon, sset in days:
+        if rise <= now <= sset:
+            t = (noon - now) / (noon - rise) if now < noon else (now - noon) / (sset - noon)
+            return HORIZON_DARKNESS * ease(t)
+    for (_, _, sset), (rise, _, _) in zip(days, days[1:]):
+        if sset < now < rise:
+            half_night = (rise - sset) / 2
+            t = abs(now - (sset + half_night)) / half_night
+            return 1 - (1 - HORIZON_DARKNESS) * ease(t)
+    return 1.0
+
+
+def location() -> tuple[float, float]:
+    try:
+        lat, lon = LOCATION_FILE.read_text().split()
+        return float(lat), float(lon)
+    except (OSError, ValueError):
+        return DEFAULT_LOCATION
+
+
+def reload_theme() -> str:
+    """Reload the theme in the running Doom daemon, or export headlessly without it."""
+    form = f"(progn (load-theme '{THEME} t) (doom-color 'bg))"
+    if shutil.which("emacsclient"):
+        r = subprocess.run(["emacsclient", "-s", "doom", "-e", form], capture_output=True, text=True, timeout=120)
+        if r.returncode == 0:
+            return f"doom daemon reloaded, bg {r.stdout.strip()}"
+    build = sorted(Path.home().glob("doom-emacs/.local/straight/build-*/doom-themes"))[-1]
+    elisp = f"""(progn
+      (require 'doom-themes)
+      (add-to-list 'custom-theme-load-path (expand-file-name "~/.doom.d/themes"))
+      (setq doom-theme '{THEME})
+      (load (expand-file-name "~/.doom.d/kitty-theme.el"))
+      (remove-hook 'doom-load-theme-hook #'hasan/kitty-theme-export)
+      (load-theme '{THEME} t)
+      (hasan/kitty-theme-export))"""
+    subprocess.run(["emacs", "--batch", "-L", str(build), "--eval", elisp], check=True, capture_output=True, timeout=120)
+    return "no doom daemon; exported headlessly"
+
+
+def main() -> None:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
+    ap.add_argument("--at", metavar="HH:MM", help="compute for this local time today instead of now")
+    ap.add_argument("--darkness", type=float, help="force this darkness instead of computing it")
+    ap.add_argument("--print", action="store_true", help="print the darkness and sun times, change nothing")
+    args = ap.parse_args()
+
+    lat, lon = location()
+    now = datetime.now().astimezone()
+    if args.at:
+        now = datetime.combine(now.date(), time.fromisoformat(args.at)).astimezone()
+    d = args.darkness if args.darkness is not None else darkness_at(now, lat, lon)
+    d = min(1.0, max(0.0, d))
+
+    if args.print:
+        rise, noon, sset = (t.astimezone() for t in sun_events(now.date(), lat, lon))
+        print(f"{now:%H:%M} darkness={d:.3f} sunrise={rise:%H:%M} noon={noon:%H:%M} sunset={sset:%H:%M}")
+        return
+
+    STATE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    STATE_FILE.write_text(f"{d:.4f}\n")
+    print(f"darkness {d:.3f}: {reload_theme()}")
+
+
+if __name__ == "__main__":
+    main()

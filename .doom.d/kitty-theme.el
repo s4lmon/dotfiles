@@ -13,8 +13,19 @@
   "First defined colour among NAMES in the active Doom theme."
   (seq-some (lambda (n) (ignore-errors (doom-color n))) names))
 
+(defun hasan/kt--luminance (hex)
+  "WCAG relative luminance of HEX, 0 (black) to 1 (white)."
+  (let ((lin (lambda (c) (if (<= c 0.03928) (/ c 12.92) (expt (/ (+ c 0.055) 1.055) 2.4)))))
+    (pcase-let ((`(,r ,g ,b) (doom-name-to-rgb hex)))
+      (+ (* 0.2126 (funcall lin r)) (* 0.7152 (funcall lin g)) (* 0.0722 (funcall lin b))))))
+
+(defun hasan/kt--contrast (a b)
+  (let ((la (+ (hasan/kt--luminance a) 0.05)) (lb (+ (hasan/kt--luminance b) 0.05)))
+    (/ (max la lb) (min la lb))))
+
 (defun hasan/kt--light-p (bg)
-  (> (apply #'+ (doom-name-to-rgb bg)) 1.5))
+  "Non-nil when dark text reads better than white on BG."
+  (>= (hasan/kt--luminance bg) 0.18))
 
 (defun hasan/kt--palette ()
   "Kitty setting -> hex colour alist derived from the current Doom palette."
@@ -30,10 +41,10 @@
       (cursor . ,(doom-darken coral 0.1))
       (cursor_text_color . ,bg)
       (selection_background . ,peach)
-      (selection_foreground . ,fg)
+      (selection_foreground . ,(if light fg (doom-color 'base0)))
       (url_color . ,(doom-color 'blue))
       (active_tab_background . ,peach)
-      (active_tab_foreground . ,fg)
+      (active_tab_foreground . ,(if light fg (doom-color 'base0)))
       (inactive_tab_background . ,(doom-color 'base2))
       (inactive_tab_foreground . ,(doom-color 'base5))
       (tab_bar_background . ,(doom-color 'base1))
@@ -68,7 +79,14 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
          (coral (funcall pick 'coral 'red 0.5))
          (peach (funcall pick 'peach 'orange 0.4))
          (rose (funcall pick 'rose 'magenta 0.4))
-         (mauve (funcall pick 'mauve 'violet 0.6)))
+         (mauve (funcall pick 'mauve 'violet 0.6))
+         (segments (list coral peach (funcall tint (doom-color 'yellow) 0.3) (funcall tint rose 0.6)
+                         (if light (funcall tint mauve 0.4) (doom-lighten mauve 0.25))))
+         ;; segment text: first of fg, bg, deep shade that is legible on every segment
+         (worst (lambda (c) (apply #'min (mapcar (lambda (s) (hasan/kt--contrast c s)) segments))))
+         (candidates (list fg bg (doom-darken bg 0.5)))
+         (crust (or (seq-find (lambda (c) (>= (funcall worst c) 4.0)) candidates)
+                    (car (seq-sort-by worst #'> candidates)))))
     `((red . ,coral)
       (peach . ,peach)
       (yellow . ,(funcall tint (doom-color 'yellow) 0.3))
@@ -76,7 +94,7 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
       (teal . ,(funcall tint peach 0.6))
       (sapphire . ,(funcall tint coral 0.4))
       (blue . ,(funcall tint peach 0.6))
-      (lavender . ,(funcall tint mauve 0.4))
+      (lavender . ,(nth 4 segments))
       (mauve . ,mauve)
       (text_red . ,(doom-color 'red))
       (text_green . ,(doom-color 'green))
@@ -87,7 +105,7 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
       (overlay0 . ,(doom-color 'base4))
       (surface0 . ,(doom-color 'base2))
       (base . ,bg)
-      (crust . ,(if light fg bg)))))
+      (crust . ,crust))))
 
 (defun hasan/kt--set-include (theme)
   "Point kitty.conf's theme include at THEME."
