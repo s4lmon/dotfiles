@@ -73,11 +73,34 @@ install_pkgs_macos() {
 }
 
 install_pkgs_linux() {
-  local needed=(emacs git rg fd cmake aspell tmux starship fzf zoxide atuin kitty)
-  local missing=()
-  for t in "${needed[@]}"; do command -v "$t" >/dev/null || missing+=("$t"); done
-  [ ${#missing[@]} -eq 0 ] || warn "not on PATH: ${missing[*]} (install with your package manager)"
-  fc-list 2>/dev/null | grep -qi juliamono || warn "JuliaMono font not installed"
+  [ -x /home/linuxbrew/.linuxbrew/bin/brew ] && eval "$(/home/linuxbrew/.linuxbrew/bin/brew shellenv)"
+  local pkgs=(git ripgrep fd cmake aspell tmux starship fzf zoxide atuin)
+  local missing=() t bin
+  for t in "${pkgs[@]}"; do
+    bin=$t
+    [ "$t" = ripgrep ] && bin=rg
+    command -v "$bin" >/dev/null || missing+=("$t")
+  done
+  if [ ${#missing[@]} -gt 0 ]; then
+    if command -v brew >/dev/null; then
+      log "brew install ${missing[*]}"
+      brew install "${missing[@]}"
+    else
+      warn "not on PATH: ${missing[*]} (install linuxbrew or use your package manager)"
+    fi
+  fi
+  for t in emacs kitty; do
+    command -v "$t" >/dev/null || warn "$t not on PATH (install with your package manager)"
+  done
+
+  # fontconfig does the matching, grep -q under pipefail misreports
+  if [ -z "$(fc-list JuliaMono 2>/dev/null)" ]; then
+    local dst=$HOME/.local/share/fonts/JuliaMono
+    log "downloading JuliaMono into $dst"
+    mkdir -p "$dst"
+    curl -fsSL https://github.com/cormullion/juliamono/releases/latest/download/JuliaMono-ttf.tar.gz | tar -xz -C "$dst"
+    fc-cache -f "$dst"
+  fi
 }
 
 # ---------------------------------------------------------------------------
@@ -94,6 +117,7 @@ link_common() {
   link .local/bin/sun-theme
   link .zshrc
   link .gitconfig
+  link .zshenv
   link .config/atuin/config.toml
 }
 
