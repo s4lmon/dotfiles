@@ -1,4 +1,6 @@
+config-version = 2
 start-at-login = true
+persistent-workspaces = ['1', '2', '3', '4', '5', '6', '7', '8', '9']
 after-startup-command = [
   'exec-and-forget borders',
   'exec-and-forget ~/.local/bin/emacs-launch --ensure-daemon',
@@ -53,10 +55,10 @@ alt-u = 'workspace --wrap-around next'
 alt-i = 'workspace --wrap-around prev'
 alt-ctrl-j = 'workspace --wrap-around next'
 alt-ctrl-k = 'workspace --wrap-around prev'
-alt-ctrl-u = 'move-node-to-workspace --wrap-around next'
-alt-ctrl-i = 'move-node-to-workspace --wrap-around prev'
-alt-shift-u = 'move-node-to-workspace --wrap-around next'
-alt-shift-i = 'move-node-to-workspace --wrap-around prev'
+alt-ctrl-u = 'move-node-to-workspace --focus-follows-window --wrap-around next'
+alt-ctrl-i = 'move-node-to-workspace --focus-follows-window --wrap-around prev'
+alt-shift-u = 'move-node-to-workspace --focus-follows-window --wrap-around next'
+alt-shift-i = 'move-node-to-workspace --focus-follows-window --wrap-around prev'
 alt-tab = 'workspace-back-and-forth'
 
 alt-1 = 'workspace 1'
@@ -68,17 +70,15 @@ alt-6 = 'workspace 6'
 alt-7 = 'workspace 7'
 alt-8 = 'workspace 8'
 alt-9 = 'workspace 9'
-alt-0 = 'workspace 0'
-alt-ctrl-1 = 'move-node-to-workspace 1'
-alt-ctrl-2 = 'move-node-to-workspace 2'
-alt-ctrl-3 = 'move-node-to-workspace 3'
-alt-ctrl-4 = 'move-node-to-workspace 4'
-alt-ctrl-5 = 'move-node-to-workspace 5'
-alt-ctrl-6 = 'move-node-to-workspace 6'
-alt-ctrl-7 = 'move-node-to-workspace 7'
-alt-ctrl-8 = 'move-node-to-workspace 8'
-alt-ctrl-9 = 'move-node-to-workspace 9'
-alt-ctrl-0 = 'move-node-to-workspace 0'
+alt-shift-1 = 'move-node-to-workspace --focus-follows-window 1'
+alt-shift-2 = 'move-node-to-workspace --focus-follows-window 2'
+alt-shift-3 = 'move-node-to-workspace --focus-follows-window 3'
+alt-shift-4 = 'move-node-to-workspace --focus-follows-window 4'
+alt-shift-5 = 'move-node-to-workspace --focus-follows-window 5'
+alt-shift-6 = 'move-node-to-workspace --focus-follows-window 6'
+alt-shift-7 = 'move-node-to-workspace --focus-follows-window 7'
+alt-shift-8 = 'move-node-to-workspace --focus-follows-window 8'
+alt-shift-9 = 'move-node-to-workspace --focus-follows-window 9'
 
 alt-f = 'fullscreen'
 alt-shift-f = 'layout floating tiling'
