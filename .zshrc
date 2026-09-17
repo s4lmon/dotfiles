@@ -33,6 +33,8 @@ export NVM_DIR="$HOME/.nvm"
 [ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"
 [ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"
 
+# trust dotfiles mise config on every machine (avoids "Config files ... are not trusted")
+export MISE_TRUSTED_CONFIG_PATHS="$HOME/dotfiles"
 command -v mise >/dev/null && eval "$(mise activate zsh)"
 
 # --- completion ------------------------------------------------------------
