@@ -9,6 +9,9 @@
 (defvar hasan/starship-conf (expand-file-name "~/.config/starship.toml")
   "Starship config; a palette named after the Doom theme is maintained inside it.")
 
+(defvar hasan/borders-rc (expand-file-name "~/.config/borders/bordersrc")
+  "JankyBorders config (AeroSpace window borders on macOS).")
+
 (defun hasan/kt--color (&rest names)
   "First defined colour among NAMES in the active Doom theme."
   (seq-some (lambda (n) (ignore-errors (doom-color n))) names))
@@ -174,6 +177,21 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
       (insert (format "%s = \"%s\"\n" (car kv) (cdr kv))))
     (write-region nil nil hasan/starship-conf)))
 
+(defun hasan/kt--write-borders (name)
+  "Write JankyBorders colours from the kitty palette and push them to a running instance."
+  (let* ((p (hasan/kt--palette))
+         (argb (lambda (k) (concat "0xff" (substring (alist-get k p) 1))))
+         (opts (list "style=round" "width=6.0" "hidpi=on"
+                     (concat "active_color=" (funcall argb 'active_border_color))
+                     (concat "inactive_color=" (funcall argb 'inactive_border_color)))))
+    (make-directory (file-name-directory hasan/borders-rc) t)
+    (with-temp-file hasan/borders-rc
+      (insert (format "#!/bin/bash\n# %s — generated from the Doom theme by kitty-theme.el; do not edit\n" name))
+      (insert (format "options=(%s)\n" (mapconcat #'identity opts " ")))
+      (insert "borders \"${options[@]}\"\n"))
+    (set-file-modes hasan/borders-rc #o755)
+    (apply #'call-process "borders" nil nil nil opts)))
+
 (defun hasan/kitty-theme-export ()
   "Write the active Doom theme to kitty and starship, then reload kitty."
   (interactive)
@@ -182,6 +200,8 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
          (out (hasan/kt--write-kitty name)))
     (hasan/kt--write-starship name)
     (hasan/kt--write-tmux name)
+    (when (eq system-type 'darwin)
+      (hasan/kt--write-borders name))
     (call-process "pkill" nil nil nil "-USR1" "-x" "kitty")
     (message "kitty + starship + tmux themes written: %s" out)))
 

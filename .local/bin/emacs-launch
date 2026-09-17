@@ -6,6 +6,6 @@ case "${profile:-doom}" in
   *)     dir="$HOME/.emacs.d";   sock=spacemacs ;;
 esac
 emacsclient -s "$sock" --eval t >/dev/null 2>&1 ||
-  /usr/bin/emacs --daemon="$sock" --init-directory "$dir"
+  emacs --daemon="$sock" --init-directory "$dir"
 [ "$1" = "--ensure-daemon" ] && exit 0
 exec emacsclient -c -s "$sock" "$@"

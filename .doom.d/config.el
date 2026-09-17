@@ -2,7 +2,13 @@
 
 (setq doom-theme 'sunset-light
       doom-themes-padded-modeline t
-      doom-font (font-spec :family "monospace" :size 14))
+      doom-font (font-spec :family (if (eq system-type (quote darwin)) "JuliaMono" "monospace")
+                            :size 14))
+
+(when (eq system-type (quote darwin))
+  (setq frame-resize-pixelwise t
+        mac-command-modifier (quote meta)
+        mac-option-modifier (quote super)))
 
 ;; keep kitty's colours in lockstep with whatever theme Emacs is using
 (load! "kitty-theme")
