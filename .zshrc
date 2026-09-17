@@ -76,13 +76,18 @@ if command -v fzf >/dev/null; then
   else                                                                # brew (mac/linux)
     eval "$(fzf --zsh)"
   fi
-  fzf-and-run-widget() {
-    fzf-history-widget
-    zle accept-line
-  }
-  zle     -N   fzf-and-run-widget
-  bindkey '^R' fzf-and-run-widget
+  if ! command -v atuin >/dev/null; then   # atuin owns ^R when present
+    fzf-and-run-widget() {
+      fzf-history-widget
+      zle accept-line
+    }
+    zle     -N   fzf-and-run-widget
+    bindkey '^R' fzf-and-run-widget
+  fi
 fi
+
+# --- atuin: synced shell history (^R search, up-arrow = this session) -------
+command -v atuin >/dev/null && eval "$(atuin init zsh)"
 
 # Fix Ctrl+A / Ctrl+E
 bindkey '^A' beginning-of-line

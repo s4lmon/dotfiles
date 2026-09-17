@@ -1,0 +1,29 @@
+# atuin: shared, encrypted shell history across machines.
+# One-time per machine: `atuin login` (or `atuin register` the very first time),
+# then `atuin sync`. Key: `atuin key` on an already-logged-in machine.
+
+# Sync to the hosted server; point at a self-hosted one by changing sync_address.
+auto_sync = true
+sync_frequency = "5m"
+# sync_address = "https://api.atuin.sh"
+
+# v2 sync: record-based, merge-safe across concurrent machines.
+[sync]
+records = true
+
+# Search UI
+search_mode = "fuzzy"
+filter_mode = "global"           # all hosts by default
+filter_mode_shell_up_key_binding = "session"   # up-arrow stays local
+style = "compact"
+inline_height = 20
+show_preview = true
+enter_accept = true              # Enter runs the command, Tab edits it
+keymap_mode = "emacs"
+
+# Keep noise out of shared history
+history_filter = [
+  "^ ",           # leading-space commands
+]
+cwd_filter = []
+secrets_filter = true

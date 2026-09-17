@@ -38,7 +38,7 @@ install_pkgs_macos() {
     cmake libtool
     aspell shellcheck shfmt pandoc
     node
-    tmux starship
+    tmux starship fzf zoxide atuin
     felixkratz/formulae/borders
   )
   local casks=(
@@ -73,7 +73,7 @@ install_pkgs_macos() {
 }
 
 install_pkgs_linux() {
-  local needed=(emacs git rg fd cmake aspell tmux starship kitty)
+  local needed=(emacs git rg fd cmake aspell tmux starship fzf zoxide atuin kitty)
   local missing=()
   for t in "${needed[@]}"; do command -v "$t" >/dev/null || missing+=("$t"); done
   [ ${#missing[@]} -eq 0 ] || warn "not on PATH: ${missing[*]} (install with your package manager)"
@@ -93,6 +93,7 @@ link_common() {
   link .local/bin/emacs-launch
   link .zshrc
   link .gitconfig
+  link .config/atuin/config.toml
 }
 
 link_macos() {
