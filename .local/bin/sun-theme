@@ -8,12 +8,17 @@ Darkness is 0 at solar noon, 0.35 at sunrise and sunset, 1 at solar midnight,
 cosine-eased in between. It is signed: negative from solar midnight to noon so
 the theme can give mornings their own colours. Location is read from ~/.config/sun-theme/location as
 "lat lon"; New York is the default.
+
+Scheduled every 30 min by systemd (.config/systemd/user/sun-theme.timer) on Linux
+and launchd (.config/launchd/com.hasan.sun-theme.plist) on macOS.
 """
 
 import argparse
 import math
+import os
 import shutil
 import subprocess
+import tempfile
 from datetime import date, datetime, time, timedelta, timezone
 from pathlib import Path
 
@@ -80,13 +85,32 @@ def location() -> tuple[float, float]:
         return DEFAULT_LOCATION
 
 
+def server_sockets() -> list[str]:
+    """Names of every live Emacs server socket for this user (Linux and macOS layouts)."""
+    dirs = []
+    if xdg := os.environ.get("XDG_RUNTIME_DIR"):
+        dirs.append(Path(xdg) / "emacs")
+    dirs.append(Path(tempfile.gettempdir()) / f"emacs{os.getuid()}")
+    dirs.append(Path(f"/tmp/emacs{os.getuid()}"))
+    names: list[str] = []
+    for d in dirs:
+        if d.is_dir():
+            names += sorted(p.name for p in d.iterdir() if p.is_socket())
+    # prefer the doom daemon first, then any other server (e.g. a GUI Emacs.app instance)
+    return sorted(set(names), key=lambda n: (n != "doom", n))
+
+
 def reload_theme() -> str:
-    """Reload the theme in the running Doom daemon, or export headlessly without it."""
+    """Reload the theme in every running Emacs server, or export headlessly if there is none."""
     form = f"(progn (load-theme '{THEME} t) (doom-color 'bg))"
+    done = []
     if shutil.which("emacsclient"):
-        r = subprocess.run(["emacsclient", "-s", "doom", "-e", form], capture_output=True, text=True, timeout=120)
-        if r.returncode == 0:
-            return f"doom daemon reloaded, bg {r.stdout.strip()}"
+        for sock in server_sockets():
+            r = subprocess.run(["emacsclient", "-s", sock, "-e", form], capture_output=True, text=True, timeout=120)
+            if r.returncode == 0:
+                done.append(f"{sock} bg {r.stdout.strip()}")
+    if done:
+        return "reloaded " + ", ".join(done)
     build = sorted(Path.home().glob("doom-emacs/.local/straight/build-*/doom-themes"))[-1]
     elisp = f"""(progn
       (require 'doom-themes)
@@ -97,7 +121,7 @@ def reload_theme() -> str:
       (load-theme '{THEME} t)
       (hasan/kitty-theme-export))"""
     subprocess.run(["emacs", "--batch", "-L", str(build), "--eval", elisp], check=True, capture_output=True, timeout=120)
-    return "no doom daemon; exported headlessly"
+    return "no emacs server; exported headlessly"
 
 
 def main() -> None:

@@ -38,7 +38,7 @@ install_pkgs_macos() {
     cmake libtool
     aspell shellcheck shfmt pandoc
     node
-    tmux starship fzf zoxide atuin
+    tmux starship fzf zoxide atuin uv
     felixkratz/formulae/borders
   )
   local casks=(
@@ -91,6 +91,7 @@ link_common() {
   link .config/starship.toml
   link .config/emacs-profile
   link .local/bin/emacs-launch
+  link .local/bin/sun-theme
   link .zshrc
   link .gitconfig
   link .config/atuin/config.toml
@@ -99,6 +100,15 @@ link_common() {
 link_macos() {
   link .config/aerospace
   link .config/borders
+  link_launch_agent com.hasan.sun-theme
+}
+
+# Symlink a plist from .config/launchd into ~/Library/LaunchAgents and (re)load it.
+link_launch_agent() {
+  local label=$1 dst="$HOME/Library/LaunchAgents/$1.plist"
+  link ".config/launchd/$1.plist" "$dst"
+  launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
+  if launchctl bootstrap "gui/$(id -u)" "$dst"; then log "loaded launch agent $label"; else warn "could not load $label"; fi
 }
 
 link_tree() {
