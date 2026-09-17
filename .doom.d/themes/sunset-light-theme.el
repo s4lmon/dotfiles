@@ -38,20 +38,23 @@ Can be an integer to determine the exact padding."
   :type '(choice (const nil) float))
 
 (defcustom sunset-light-darkness-file (expand-file-name "~/.local/state/sun-theme/darkness")
-  "File holding a 0..1 darkness written by sun-theme: 0 at solar noon, 1 at solar midnight."
+  "File holding a -1..1 darkness written by sun-theme: 0 at solar noon, ±1 at
+solar midnight, negative before noon."
   :group 'sunset-light-theme
   :type 'file)
 
 (defconst sunset-light--bg-keyframes
-  '((0.0 . "#fdf8f5") (0.35 . "#f6bdb3") (0.65 . "#6b5570") (1.0 . "#1c2540"))
-  "Background across the day: midday, sunset, deep dusk, midnight.")
+  '((-1.0 . "#1c2540") (-0.65 . "#5f5384") (-0.5 . "#c99aa8") (-0.35 . "#f5e3b4") (-0.2 . "#cfe3f3")
+    (0.0 . "#fdfbf8")
+    (0.2 . "#bcd8f2") (0.35 . "#f6bdb3") (0.65 . "#6b5570") (1.0 . "#1c2540"))
+  "Background across the day, from midnight through dawn, sunrise, noon, sunset, dusk and back.")
 
 (defun sunset-light--darkness ()
   (or sunset-light-darkness
       (ignore-errors
         (with-temp-buffer
           (insert-file-contents sunset-light-darkness-file)
-          (min 1.0 (max 0.0 (float (string-to-number (buffer-string)))))))
+          (min 1.0 (max -1.0 (float (string-to-number (buffer-string)))))))
       0.0))
 
 (defun sunset-light--luminance (hex)
@@ -74,6 +77,31 @@ Can be an integer to determine the exact padding."
     (while (and (< (sunset-light--contrast c bg) target) (< i 24))
       (setq c (if dark (doom-lighten c 0.08) (doom-darken c 0.08))
             i (1+ i)))
+    c))
+
+(defun sunset-light--warm-p (hex)
+  "Non-nil when HEX is a saturated pink-to-yellow."
+  (pcase-let* ((`(,r ,g ,b) (doom-name-to-rgb hex))
+               (mx (max r g b))
+               (chroma (if (zerop mx) 0.0 (/ (- mx (min r g b)) mx)))
+               (h (car (color-rgb-to-hsl r g b))))
+    (and (> chroma 0.12) (or (< h 0.2) (> h 0.9)))))
+
+(defun sunset-light--inverse (bg)
+  "Selection colour opposing BG: complementary hue family with inverted lightness.
+Cool or neutral bgs get peach, warm bgs get sky; light bgs get a deep version,
+dark bgs a pale one."
+  (let* ((hue (if (sunset-light--warm-p bg) 0.55 0.045))
+         (dark (< (sunset-light--luminance bg) 0.18))
+         (rgb (if dark (color-hsl-to-rgb hue 0.75 0.78) (color-hsl-to-rgb hue 0.5 0.4)))
+         (hex (apply #'color-rgb-to-hex (append rgb '(2)))))
+    (sunset-light--readable hex bg 2.5)))
+
+(defun sunset-light--wash (tint bg &optional target)
+  "Blend TINT over BG, strengthening it until it stands TARGET contrast apart (default 1.3)."
+  (let ((target (or target 1.3)) (a 0.15) (c (doom-blend tint bg 0.15)))
+    (while (and (< (sunset-light--contrast c bg) target) (< a 1.0))
+      (setq a (min 1.0 (+ a 0.05)) c (doom-blend tint bg a)))
     c))
 
 (defun sunset-light--keyframe (frames d)
@@ -133,6 +161,12 @@ Can be an integer to determine the exact padding."
    (sky        '("#9bb9c3" "#a3c1cb" "brightcyan"   ))
    (mauve      '("#947481" "#9c7f8b" "magenta"      ))
 
+   ;; selection inverts the bg: deep peach on light blue, pale peach on navy, sky on warm bgs
+   (tint       (if (sunset-light--warm-p bg-hex) sky peach))
+   (wash       `(,(sunset-light--inverse bg-hex) ,@(cdr tint)))
+   (wash-fg    (list (if dark "#241d21" "#fdf8f5") "black" "white"))
+   (wash-soft  `(,(sunset-light--wash (car wash) bg-hex 1.12) ,@(cdr tint)))
+
    ;; text accents: darkened for a light bg, pastel once the bg turns dark
    (grey       base4)
    (red        (list (funcall accent "#b84f43" "#f78d7d") "#b04b40" "red"          ))
@@ -151,7 +185,7 @@ Can be an integer to determine the exact padding."
    ;; keywords mauve, types sky, strings coral, everything else fg
    (highlight      coral)
    (vertical-bar   base2)
-   (selection      peach)
+   (selection      wash)
    (builtin        fg)
    (comments       (if sunset-light-brighter-comments (doom-darken rose 0.25) base5))
    (doc-comments   (doom-darken comments 0.1))
@@ -164,8 +198,7 @@ Can be an integer to determine the exact padding."
    (strings        red)
    (variables      fg)
    (numbers        violet)
-   ;; a lighter wash on light bgs, a deeper one once text is white
-   (region         `(,(doom-blend (car peach) (car bg) (if dark 0.3 0.55)) ,@(cdr peach)))
+   (region         wash)
    (error          red)
    (warning        yellow)
    (success        green)
@@ -192,7 +225,8 @@ Can be an integer to determine the exact padding."
    ((font-lock-keyword-face &override) :weight 'normal)
    ((line-number &override) :foreground base4)
    ((line-number-current-line &override) :foreground base7 :weight 'bold)
-   (hl-line :background (doom-blend peach bg 0.22))
+   (hl-line :background wash-soft)
+   (region :background region :foreground wash-fg :extend t)
    (cursor :background (doom-darken coral 0.1))
    (link :foreground blue :underline t)
    (minibuffer-prompt :foreground magenta :weight 'bold)
@@ -205,7 +239,7 @@ Can be an integer to determine the exact padding."
    (mode-line-emphasis :foreground magenta :weight 'bold)
    (shadow :foreground base4)
    (tooltip :background base1 :foreground fg)
-   (show-paren-match :background peach :foreground base8 :weight 'bold)
+   (show-paren-match :background wash :foreground wash-fg :weight 'bold)
    (lazy-highlight :background (doom-blend sky bg 0.45) :foreground fg)
    (isearch :background coral :foreground base0 :weight 'bold)
 
@@ -253,8 +287,8 @@ Can be an integer to determine the exact padding."
    (org-done :foreground green :weight 'bold)
    (org-date :foreground blue :underline t)
    ;;;; vertico / corfu
-   (vertico-current :background base2)
-   (corfu-current :background base2)
+   (vertico-current :background region :foreground wash-fg :extend t)
+   (corfu-current :background region :foreground wash-fg)
    (corfu-default :background base0 :foreground fg)
    (orderless-match-face-0 :foreground red :weight 'bold)
    (orderless-match-face-1 :foreground magenta :weight 'bold)
@@ -276,7 +310,7 @@ Can be an integer to determine the exact padding."
    (rainbow-delimiters-depth-3-face :foreground blue)
    (rainbow-delimiters-depth-4-face :foreground base5)
    ;;;; web-mode
-   (web-mode-current-element-highlight-face :background peach :foreground base8)
+   (web-mode-current-element-highlight-face :background wash :foreground wash-fg)
    ;;;; wgrep <built-in>
    (wgrep-face :background base1)
    ;;;; whitespace

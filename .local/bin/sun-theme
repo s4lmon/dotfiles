@@ -5,7 +5,8 @@
 """Shift the Doom theme (and via it kitty, starship, tmux) with the sun.
 
 Darkness is 0 at solar noon, 0.35 at sunrise and sunset, 1 at solar midnight,
-cosine-eased in between. Location is read from ~/.config/sun-theme/location as
+cosine-eased in between. It is signed: negative from solar midnight to noon so
+the theme can give mornings their own colours. Location is read from ~/.config/sun-theme/location as
 "lat lon"; New York is the default.
 """
 
@@ -60,12 +61,14 @@ def darkness_at(now: datetime, lat: float, lon: float) -> float:
     for rise, noon, sset in days:
         if rise <= now <= sset:
             t = (noon - now) / (noon - rise) if now < noon else (now - noon) / (sset - noon)
-            return HORIZON_DARKNESS * ease(t)
+            d = HORIZON_DARKNESS * ease(t)
+            return -d if now < noon else d
     for (_, _, sset), (rise, _, _) in zip(days, days[1:]):
         if sset < now < rise:
-            half_night = (rise - sset) / 2
-            t = abs(now - (sset + half_night)) / half_night
-            return 1 - (1 - HORIZON_DARKNESS) * ease(t)
+            midnight = sset + (rise - sset) / 2
+            t = abs(now - midnight) / (midnight - sset)
+            d = 1 - (1 - HORIZON_DARKNESS) * ease(t)
+            return -d if now > midnight else d
     return 1.0
 
 
@@ -100,7 +103,7 @@ def reload_theme() -> str:
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--at", metavar="HH:MM", help="compute for this local time today instead of now")
-    ap.add_argument("--darkness", type=float, help="force this darkness instead of computing it")
+    ap.add_argument("--darkness", type=float, help="force this darkness (negative = morning half) instead of computing it")
     ap.add_argument("--print", action="store_true", help="print the darkness and sun times, change nothing")
     args = ap.parse_args()
 
@@ -109,7 +112,7 @@ def main() -> None:
     if args.at:
         now = datetime.combine(now.date(), time.fromisoformat(args.at)).astimezone()
     d = args.darkness if args.darkness is not None else darkness_at(now, lat, lon)
-    d = min(1.0, max(0.0, d))
+    d = min(1.0, max(-1.0, d))
 
     if args.print:
         rise, noon, sset = (t.astimezone() for t in sun_events(now.date(), lat, lon))
