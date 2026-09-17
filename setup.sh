@@ -91,6 +91,8 @@ link_common() {
   link .config/starship.toml
   link .config/emacs-profile
   link .local/bin/emacs-launch
+  link .zshrc
+  link .gitconfig
 }
 
 link_macos() {
@@ -106,8 +108,6 @@ link_tree() {
 }
 
 link_linux() {
-  link .zshrc
-  link .gitconfig
   link .spacemacs
   for d in niri mako swaylock fontconfig fuzzel nvim mise DankMaterialShell rog Code systemd; do
     link_tree ".config/$d"

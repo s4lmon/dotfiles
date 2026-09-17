@@ -1,18 +1,24 @@
-[credential "https://github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
-[credential "https://gist.github.com"]
-	helper = 
-	helper = !/usr/bin/gh auth git-credential
 [user]
 	email = mail@hasanamin.com
 	name = Hasan Amin
+[credential "https://github.com"]
+	helper = 
+	helper = !gh auth git-credential
+[credential "https://gist.github.com"]
+	helper = 
+	helper = !gh auth git-credential
 [credential "https://gitlab.werewolf-banded.ts.net"]
-	helper = !/home/hasan/.local/share/mise/shims/glab auth git-credential
-[rerere]
-	enabled = true
+	helper = 
+	helper = !glab auth git-credential
 [gitlab "gitlab.werewolf-banded.ts.net/api/v4"]
 	user = hamin
+[filter "lfs"]
+	clean = git-lfs clean -- %f
+	smudge = git-lfs smudge -- %f
+	process = git-lfs filter-process
+	required = true
+[rerere]
+	enabled = true
 [pull]
 	rebase = true
 [rebase]
