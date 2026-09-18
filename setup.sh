@@ -42,7 +42,7 @@ install_pkgs_macos() {
     felixkratz/formulae/borders
   )
   local casks=(
-    emacs
+    emacs-app
     font-juliamono font-symbols-only-nerd-font
     nikitabobko/tap/aerospace
   )

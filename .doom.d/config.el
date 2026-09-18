@@ -8,7 +8,9 @@
 (when (eq system-type (quote darwin))
   (setq frame-resize-pixelwise t
         mac-command-modifier (quote meta)
-        mac-option-modifier (quote super)))
+        mac-option-modifier (quote super)
+        ns-command-modifier (quote meta)
+        ns-option-modifier (quote super)))
 
 ;; keep kitty's colours in lockstep with whatever theme Emacs is using
 (load! "kitty-theme")
@@ -178,14 +180,12 @@
 ;; path translation so jump-to-def / xref work transparently.
 (defvar my-arc-root (expand-file-name "~/dev/arc/"))
 (defvar my-arc-hash
-  (string-trim
-   (shell-command-to-string
-    (format "printf '%%s' '%s' | sha256sum | head -c 8"
-            (directory-file-name my-arc-root)))))
+  (substring (secure-hash 'sha256 (directory-file-name my-arc-root)) 0 8))
 
 (defun my-arc-cpp-container-for (file)
   "Compute the podman dev container name for FILE under arc, or nil."
-  (when (and file (string-prefix-p my-arc-root (expand-file-name file)))
+  (when (and (eq system-type 'gnu/linux)
+             file (string-prefix-p my-arc-root (expand-file-name file)))
     (when-let* ((dir (locate-dominating-file file "pyproject.toml"))
                 (pyproject (expand-file-name "pyproject.toml" dir))
                 (name (with-temp-buffer

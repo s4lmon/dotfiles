@@ -50,6 +50,7 @@
        tree-sitter
 
        :os
+       (:if IS-MAC macos)
        tty
 
        :lang
