@@ -6,7 +6,7 @@ Spacemacs installation remains locally at `~/.emacs.d.bak`.
 
 Doom enables the macOS module, uses JuliaMono, and maps Command to Meta and
 Option to Super. AeroSpace reserves Option shortcuts. Homebrew installs GUI
-Emacs and required command-line tools. Run `~/doom-emacs/bin/doom env` after
+Emacs and required command-line tools. Run `~/doom-emacs/bin/doom sync --env` after
 changing shell paths so GUI Emacs inherits them.
 
 Atuin is enabled in `.zshrc`; Ctrl-R searches history. On a new machine run
