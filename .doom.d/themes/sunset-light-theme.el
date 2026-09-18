@@ -7,6 +7,7 @@
 ;;; Commentary:
 ;;; Code:
 
+(require 'color)
 (require 'doom-themes)
 
 

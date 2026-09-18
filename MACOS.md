@@ -18,3 +18,15 @@ The Mac Sketchybar config and scripts live in `.config/sketchybar`. Setup
 installs Sketchybar and Hack Nerd Font. Workspace app icons also require
 `sketchybar-app-font` (already installed on this Mac). AeroSpace starts the
 bar and its workspace icon watcher.
+
+Setup starts a named `doom` daemon through `com.hasan.doom` at login.
+Terminal `emacs` and `~/.local/bin/emacs-launch` use emacsclient with that
+same daemon. Option-Shift-E opens a GUI client; Option-E toggles layouts.
+The `com.hasan.sun-theme` agent updates terminal and prompt colours every
+30 minutes. Kitty uses 13pt JuliaMono on macOS, with Symbols Nerd Font Mono
+for icon glyphs; the shared Linux font size remains 11pt.
+
+Verified on Emacs 31.1 (native Cocoa/NS, Apple Silicon): AeroSpace reports
+`AXWindow` / `AXStandardWindow` for emacsclient frames. The custom theme
+loads the built-in `color` library explicitly; Borders updates run
+asynchronously so they cannot block the Emacs daemon.

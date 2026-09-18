@@ -125,14 +125,16 @@ link_macos() {
   link .config/aerospace
   link .config/sketchybar
   link .config/borders
-  link_launch_agent com.hasan.sun-theme
 }
 
-# Symlink a plist from .config/launchd into ~/Library/LaunchAgents and (re)load it.
+# Link and load a launch agent without restarting an existing daemon.
 link_launch_agent() {
   local label=$1 dst="$HOME/Library/LaunchAgents/$1.plist"
   link ".config/launchd/$1.plist" "$dst"
-  launchctl bootout "gui/$(id -u)/$label" 2>/dev/null || true
+  if launchctl print "gui/$(id -u)/$label" >/dev/null 2>&1; then
+    log "launch agent already loaded: $label"
+    return 0
+  fi
   if launchctl bootstrap "gui/$(id -u)" "$dst"; then log "loaded launch agent $label"; else warn "could not load $label"; fi
 }
 
@@ -202,7 +204,14 @@ main() {
       ;;
     *) warn "unsupported OS: $OS"; exit 1 ;;
   esac
-  [ -n "${SKIP_DOOM:-}" ] || setup_doom
+  if [ -z "${SKIP_DOOM:-}" ]; then
+    setup_doom
+    if [ "$OS" = Darwin ]; then
+      "$DOOM_DIR/bin/doom" sync --env
+      link_launch_agent com.hasan.doom
+      link_launch_agent com.hasan.sun-theme
+    fi
+  fi
   log "done"
 }
 

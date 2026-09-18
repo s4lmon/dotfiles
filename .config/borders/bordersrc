@@ -1,4 +1,4 @@
 #!/bin/bash
 # sunset-light — generated from the Doom theme by kitty-theme.el; do not edit
-options=(style=round width=6.0 hidpi=on active_color=0xfff78d7d inactive_color=0xffb2c5d7)
+options=(style=round width=6.0 hidpi=on active_color=0xfff78d7d inactive_color=0xff73647b)
 borders "${options[@]}"

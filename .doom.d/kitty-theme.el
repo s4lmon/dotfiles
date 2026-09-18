@@ -190,7 +190,9 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
       (insert (format "options=(%s)\n" (mapconcat #'identity opts " ")))
       (insert "borders \"${options[@]}\"\n"))
     (set-file-modes hasan/borders-rc #o755)
-    (apply #'call-process "borders" nil nil nil opts)))
+    (when (executable-find "borders")
+      (let ((process (apply #'start-process "theme-borders" nil "borders" opts)))
+        (set-process-query-on-exit-flag process nil)))))
 
 (defun hasan/kitty-theme-export ()
   "Write the active Doom theme to kitty and starship, then reload kitty."

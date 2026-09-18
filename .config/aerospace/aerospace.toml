@@ -74,7 +74,8 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 
     alt-s = 'layout v_accordion' # 'layout stacking' in i3
     alt-w = 'layout h_accordion' # 'layout tabbed' in i3
-    alt-e = 'exec-and-forget ~/.local/bin/emacs-launch' # Doom via emacsclient
+    alt-e = 'layout tiles horizontal vertical'
+    alt-shift-e = 'exec-and-forget ~/.local/bin/emacs-launch' # Doom via emacsclient
 
     alt-shift-space = 'layout floating tiling' # 'floating toggle' in i3
 
