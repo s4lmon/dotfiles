@@ -13,3 +13,8 @@ Atuin is enabled in `.zshrc`; Ctrl-R searches history. On a new machine run
 `atuin import zsh`. Account login and the existing encryption key are needed
 for cross-machine sync; neither belongs in this repository. Shell history
 and Atuin databases must remain private local files.
+
+The Mac Sketchybar config and scripts live in `.config/sketchybar`. Setup
+installs Sketchybar and Hack Nerd Font. Workspace app icons also require
+`sketchybar-app-font` (already installed on this Mac). AeroSpace starts the
+bar and its workspace icon watcher.

@@ -39,11 +39,11 @@ install_pkgs_macos() {
     aspell shellcheck shfmt pandoc
     node
     tmux starship fzf zoxide atuin uv
-    felixkratz/formulae/borders
+    felixkratz/formulae/borders felixkratz/formulae/sketchybar
   )
   local casks=(
     emacs-app
-    font-juliamono font-symbols-only-nerd-font
+    font-juliamono font-symbols-only-nerd-font font-hack-nerd-font
     nikitabobko/tap/aerospace
   )
   [ -d /Applications/kitty.app ] || casks+=(kitty)
@@ -123,6 +123,7 @@ link_common() {
 
 link_macos() {
   link .config/aerospace
+  link .config/sketchybar
   link .config/borders
   link_launch_agent com.hasan.sun-theme
 }
