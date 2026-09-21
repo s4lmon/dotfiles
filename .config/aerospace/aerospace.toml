@@ -44,6 +44,15 @@ on-focused-monitor-changed = ['move-mouse monitor-lazy-center']
 
 
 # Share workspaces across all monitors
+# Leave room for sketchybar (height 40 in sketchybarrc) plus a little breathing space
+[gaps]
+inner.horizontal = 6
+inner.vertical = 6
+outer.left = 6
+outer.bottom = 6
+outer.top = 46
+outer.right = 6
+
 [workspace-to-monitor-force-assignment]
 
 [mode.main.binding]
