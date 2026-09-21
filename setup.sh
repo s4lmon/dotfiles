@@ -43,7 +43,7 @@ install_pkgs_macos() {
   )
   local casks=(
     emacs-app
-    font-juliamono font-symbols-only-nerd-font font-hack-nerd-font
+    font-juliamono font-symbols-only-nerd-font font-hack-nerd-font font-sketchybar-app-font
     nikitabobko/tap/aerospace
   )
   [ -d /Applications/kitty.app ] || casks+=(kitty)

@@ -15,9 +15,12 @@ for cross-machine sync; neither belongs in this repository. Shell history
 and Atuin databases must remain private local files.
 
 The Mac Sketchybar config and scripts live in `.config/sketchybar`. Setup
-installs Sketchybar and Hack Nerd Font. Workspace app icons also require
-`sketchybar-app-font` (already installed on this Mac). AeroSpace starts the
-bar and its workspace icon watcher.
+installs Sketchybar, Hack Nerd Font and the `sketchybar-app-font` cask used
+for workspace app icons, and links the config. Start the bar once with
+`brew services start sketchybar` so it survives reboots; AeroSpace also
+starts it and its workspace icon watcher (`aerospace reload-config` after
+pulling). Hide the macOS menu bar (System Settings > Desktop & Dock >
+"Automatically hide and show the menu bar": Always) so the two do not overlap.
 
 Setup starts a named `doom` daemon through `com.hasan.doom` at login.
 Terminal `emacs` and `~/.local/bin/emacs-launch` use emacsclient with that
