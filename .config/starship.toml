@@ -1685,7 +1685,7 @@ surface0 = "#121212"
 base = "#1e1e1e"
 crust = "#1e1e1e"
 
-[palettes.doom-dark+]
+[palettes."doom-dark+"]
 # generated from the Doom theme by kitty-theme.el; do not edit
 red = "#e74c3c"
 peach = "#e74c3c"
