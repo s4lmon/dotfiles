@@ -51,6 +51,10 @@ alias sv='vim ~/.zshrc'
 alias sk='make build'
 alias cdd='cd ~/dev'
 alias icat='kitty +kitten icat'
+# Tailscale.app doesn't put its CLI on PATH, and a symlink to it crashes
+# ("bundleIdentifier is unknown to the registry"), so alias it instead
+[ -x /Applications/Tailscale.app/Contents/MacOS/Tailscale ] &&
+  alias tailscale='/Applications/Tailscale.app/Contents/MacOS/Tailscale'
 
 # emacs profile lives in ~/.config/emacs-profile (doom | spacemacs); GUI/niri use
 # the same switch via ~/.local/bin/emacs-launch
