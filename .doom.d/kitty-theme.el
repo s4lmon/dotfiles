@@ -155,7 +155,9 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
                 (format "set -g mode-style \"bg=%s,fg=%s\""
                         (funcall c 'selection_background) (funcall c 'selection_foreground))))
         (insert line "\n")))
-    (call-process "tmux" nil nil nil "source-file" (expand-file-name "~/.tmux.conf"))))
+    ;; GUI Emacs launched from the Dock/launchd may not have Homebrew on PATH
+    (when (executable-find "tmux")
+      (call-process "tmux" nil nil nil "source-file" (expand-file-name "~/.tmux.conf")))))
 
 (defun hasan/kt--write-starship (name)
   "Replace the [palettes.NAME] table in starship.toml and select it."
@@ -207,7 +209,15 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
     (call-process "pkill" nil nil nil "-USR1" "-x" "kitty")
     (message "kitty + starship + tmux themes written: %s" out)))
 
-(add-hook 'doom-load-theme-hook #'hasan/kitty-theme-export)
+(defun hasan/kitty-theme-export-h ()
+  "Run `hasan/kitty-theme-export' without ever aborting theme loading.
+An error here propagates out of `doom-load-theme-hook' and cancels the rest
+of Doom's startup (leader keys, doom-modeline, ...), so log it instead."
+  (condition-case err
+      (hasan/kitty-theme-export)
+    (error (message "kitty-theme export failed: %s" (error-message-string err)))))
+
+(add-hook 'doom-load-theme-hook #'hasan/kitty-theme-export-h)
 
 (provide 'kitty-theme)
 ;;; kitty-theme.el ends here

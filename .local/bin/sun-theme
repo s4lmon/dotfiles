@@ -117,7 +117,7 @@ def reload_theme() -> str:
       (add-to-list 'custom-theme-load-path (expand-file-name "~/.doom.d/themes"))
       (setq doom-theme '{THEME})
       (load (expand-file-name "~/.doom.d/kitty-theme.el"))
-      (remove-hook 'doom-load-theme-hook #'hasan/kitty-theme-export)
+      (remove-hook 'doom-load-theme-hook #'hasan/kitty-theme-export-h)
       (load-theme '{THEME} t)
       (hasan/kitty-theme-export))"""
     subprocess.run(["emacs", "--batch", "-L", str(build), "--eval", elisp], check=True, capture_output=True, timeout=120)
