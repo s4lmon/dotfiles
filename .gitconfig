@@ -25,3 +25,6 @@
 	autoStash = true
 [fetch]
 	prune = true
+[push]
+	autoSetupRemote = true
+	default = current
