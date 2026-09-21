@@ -14,9 +14,10 @@ source "$CONFIG_DIR/colors.sh" # Loads all defined colors
 # If you are looking for other colors, see the color picker:
 # https://felixkratz.github.io/SketchyBar/config/tricks#color-picker
 
-# height matches the strip macOS reserves beside the notch (NSScreen safeAreaInsets.top = 32),
-# so windows tile right under the bar without AeroSpace gaps
-sketchybar --bar position=top height=32 blur_radius=0 color=$BAR_COLOR shadow=off
+# bar height = notch/menu-bar strip macOS reserves on this display
+BAR_HEIGHT=$(osascript -l JavaScript -e 'ObjC.import("AppKit"); $.NSScreen.mainScreen.safeAreaInsets.top' 2>/dev/null)
+BAR_HEIGHT=${BAR_HEIGHT%.*}; [ "${BAR_HEIGHT:-0}" -gt 0 ] 2>/dev/null || BAR_HEIGHT=32
+sketchybar --bar position=top height=$BAR_HEIGHT blur_radius=0 color=$BAR_COLOR shadow=off
 
 ##### Changing Defaults #####
 # We now change some default values, which are applied to all further items.
