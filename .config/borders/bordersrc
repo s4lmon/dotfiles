@@ -1,4 +1,4 @@
 #!/bin/bash
-# doom-rouge — generated from the Doom theme by kitty-theme.el; do not edit
-options=(style=round width=6.0 hidpi=on active_color=0xffc6797e inactive_color=0xff1F2A3F)
+# sunset-light — generated from the Doom theme by kitty-theme.el; do not edit
+options=(style=round width=6.0 hidpi=on active_color=0xfff78d7d inactive_color=0xffd5caaa)
 borders "${options[@]}"

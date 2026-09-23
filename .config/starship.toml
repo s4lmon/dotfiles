@@ -28,7 +28,7 @@ $cmd_duration\
 $line_break\
 $character"""
 
-palette = 'doom-rouge'
+palette = 'sunset-light'
 
 [os]
 disabled = false
