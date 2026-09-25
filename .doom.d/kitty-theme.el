@@ -167,9 +167,12 @@ legible; text_* entries are the untinted colours for glyphs drawn on bg."
     (if (re-search-forward "^palette = .*$" nil t)
         (replace-match (format "palette = '%s'" name) t t)
       (insert (format "palette = '%s'\n" name)))
-    ;; drop every previously generated palette, keep hand-written ones
+    ;; drop generated palettes and any stale copy of NAME, keep hand-written ones
     (goto-char (point-min))
-    (while (re-search-forward "^\\[palettes\\.[^]]+\\]\n# generated from the Doom theme" nil t)
+    (while (re-search-forward
+            (format "^\\[palettes\\.\\(?:[^]]+\\]\n# generated from the Doom theme\\|\"?%s\"?\\]\n\\)"
+                    (regexp-quote name))
+            nil t)
       (delete-region (match-beginning 0)
                      (if (re-search-forward "^\\[" nil t) (match-beginning 0) (point-max)))
       (goto-char (point-min)))
