@@ -26,7 +26,7 @@ Setup starts a named `doom` daemon through `com.hasan.doom` at login.
 Terminal `emacs` and `~/.local/bin/emacs-launch` use emacsclient with that
 same daemon. Option-Shift-E opens a GUI client; Option-E toggles layouts.
 The `com.hasan.sun-theme` agent updates terminal and prompt colours every
-30 minutes. Kitty uses 13pt JuliaMono on macOS, with Symbols Nerd Font Mono
+30 minutes. Kitty uses 14pt JuliaMono on macOS, with Symbols Nerd Font Mono
 for icon glyphs; the shared Linux font size remains 11pt.
 
 Verified on Emacs 31.1 (native Cocoa/NS, Apple Silicon): AeroSpace reports
