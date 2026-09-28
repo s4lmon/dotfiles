@@ -127,6 +127,19 @@ link_macos() {
   link .config/borders
 }
 
+# 14pt kitty on a 3000px+ main display; macos.conf keeps 16pt elsewhere.
+kitty_local() {
+  local conf=$DOTFILES/.config/kitty/local.conf width
+  width=$(system_profiler SPDisplaysDataType 2>/dev/null |
+    awk '/Resolution:/ { w = $2 } /Main Display: Yes/ { print w; exit }')
+  if [ "${width:-0}" -ge 3000 ]; then
+    printf 'font_size 14.0\n' > "$conf"
+    log "kitty: ${width}px main display, font_size 14"
+  else
+    rm -f "$conf"
+  fi
+}
+
 # Link and load a launch agent without restarting an existing daemon.
 link_launch_agent() {
   local label=$1 dst="$HOME/Library/LaunchAgents/$1.plist"
@@ -196,6 +209,7 @@ main() {
       [ -n "${SKIP_PKGS:-}" ] || install_pkgs_macos
       link_common
       link_macos
+      kitty_local
       ;;
     Linux)
       [ -n "${SKIP_PKGS:-}" ] || install_pkgs_linux
