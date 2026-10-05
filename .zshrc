@@ -70,6 +70,17 @@ emacs() {
   emacsclient -nw -s "$sock" "$@"
 }
 
+# speed test against cloudflare, Mbit/s
+speedtest() {
+  local iface=() dl ul
+  [ -n "$1" ] && iface=(--interface "$1")
+  dl=$(curl -s -o /dev/null -w '%{speed_download}' "${iface[@]}" \
+    'https://speed.cloudflare.com/__down?bytes=99999999')
+  ul=$(head -c 50000000 /dev/zero | curl -s -o /dev/null -w '%{speed_upload}' "${iface[@]}" \
+    --data-binary @- 'https://speed.cloudflare.com/__up')
+  printf 'down %6.1f Mbit/s\nup   %6.1f Mbit/s\n' $((dl*8/1e6)) $((ul*8/1e6))
+}
+
 # --- prompt / navigation ---------------------------------------------------
 command -v starship >/dev/null && eval "$(starship init zsh)"
 command -v zoxide   >/dev/null && eval "$(zoxide init zsh)"
