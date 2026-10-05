@@ -1,6 +1,59 @@
 ;;; config.el -*- lexical-binding: t; -*-
 
-(setq doom-theme 'sunset-light
+;; light, dark, or sundial which follows the sun-theme timer through the day
+(defconst theme-switcher-file (expand-file-name "~/.config/sun-theme/mode"))
+(defconst theme-switcher-modes '("light" "dark" "sundial"))
+
+;; tron is not a doom theme, so hand it a doom palette for the terminal export
+(defconst theme-switcher-tron-palette
+  '((bg . "#000000") (bg-alt . "#0E1926") (fg . "#B0CCDC") (fg-alt . "#90ACBC")
+    (base0 . "#000000") (base1 . "#0E1926") (base2 . "#1B324B") (base3 . "#2B4255")
+    (base4 . "#3D5666") (base5 . "#5A7387") (base6 . "#6A8397") (base7 . "#90ACBC")
+    (base8 . "#CBECFF") (grey . "#5A7387")
+    (red . "#B62D66") (orange . "#DEB45B") (green . "#4BB5BE") (teal . "#BBF0EF")
+    (yellow . "#DEB45B") (blue . "#387AAA") (dark-blue . "#040E3F") (magenta . "#FF7DBB")
+    (violet . "#B62D66") (cyan . "#8Fd4FF") (dark-cyan . "#4BB5BE")))
+
+(defun theme-switcher-current ()
+  (or (ignore-errors
+        (with-temp-buffer
+          (insert-file-contents theme-switcher-file)
+          (car (member (string-trim (buffer-string)) theme-switcher-modes))))
+      "sundial"))
+
+(defun theme-switcher (mode)
+  "Switch colour MODE and apply it now."
+  (interactive (list (completing-read "Theme mode: " theme-switcher-modes nil t)))
+  (make-directory (file-name-directory theme-switcher-file) t)
+  (with-temp-file theme-switcher-file (insert mode "\n"))
+  (pcase mode
+    ("dark"
+     (setq doom-theme 'tron-legacy
+           doom-themes--colors theme-switcher-tron-palette)
+     (load-theme 'tron-legacy t))
+    ("light"
+     (setq doom-theme 'sunset-light
+           sunset-light-darkness 0.0)
+     (load-theme 'sunset-light t))
+    ("sundial"
+     (setq doom-theme 'sunset-light
+           sunset-light-darkness nil)
+     (start-process "sun-theme" nil (expand-file-name "~/.local/bin/sun-theme"))))
+  (message "theme mode: %s" mode))
+
+;; doom's load-theme moves to SPC h t l
+(define-key help-map "t" nil)
+(map! :map help-map
+      (:prefix ("t" . "theme")
+       :desc "Theme mode" "t" #'theme-switcher
+       :desc "Load theme" "l" #'load-theme))
+
+(pcase (theme-switcher-current)
+  ("dark" (setq doom-theme 'tron-legacy doom-themes--colors theme-switcher-tron-palette))
+  ("light" (setq doom-theme 'sunset-light sunset-light-darkness 0.0))
+  (_ (setq doom-theme 'sunset-light)))
+
+(setq tron-legacy-theme-vivid-cursor t
       doom-themes-padded-modeline t
       doom-font (font-spec :family (if (eq system-type (quote darwin)) "JuliaMono" "monospace")
                             :size 14))
@@ -79,6 +132,7 @@
 (map! :leader
       :desc "M-x" "SPC" #'execute-extended-command
       :desc "Magit status" "g s" #'magit-status
+      :desc "Truncate lines" "t t" #'toggle-truncate-lines
       (:prefix ("a" . "applications")
        :desc "Dired" "d" #'dired))
 

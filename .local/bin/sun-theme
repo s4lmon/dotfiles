@@ -25,6 +25,7 @@ from pathlib import Path
 HORIZON_DARKNESS = 0.35
 STATE_FILE = Path.home() / ".local/state/sun-theme/darkness"
 LOCATION_FILE = Path.home() / ".config/sun-theme/location"
+MODE_FILE = Path.home() / ".config/sun-theme/mode"
 DEFAULT_LOCATION = (40.7128, -74.0060)
 THEME = "sunset-light"
 
@@ -130,6 +131,11 @@ def main() -> None:
     ap.add_argument("--darkness", type=float, help="force this darkness (negative = morning half) instead of computing it")
     ap.add_argument("--print", action="store_true", help="print the darkness and sun times, change nothing")
     args = ap.parse_args()
+
+    mode = MODE_FILE.read_text().strip() if MODE_FILE.exists() else "sundial"
+    if mode != "sundial" and not args.print:
+        print(f"mode {mode}: leaving theme alone")
+        return
 
     lat, lon = location()
     now = datetime.now().astimezone()
