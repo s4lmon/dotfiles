@@ -28,7 +28,7 @@ $cmd_duration\
 $line_break\
 $character"""
 
-palette = 'sunset-light'
+palette = 'tron-legacy'
 
 [os]
 disabled = false
@@ -277,24 +277,24 @@ base = "#24273a"
 mantle = "#1e2030"
 crust = "#181926"
 
-[palettes."sunset-light"]
+[palettes."tron-legacy"]
 # generated from the Doom theme by kitty-theme.el; do not edit
-red = "#f78d7d"
-peach = "#ffccbb"
-yellow = "#d7caba"
-green = "#d8bcbd"
-teal = "#f7dbd2"
-sapphire = "#f1c9c5"
-blue = "#f7dbd2"
-lavender = "#c9bfc7"
-mauve = "#947481"
-text_red = "#b84f43"
-text_green = "#3f7d6e"
-text_yellow = "#a56d2e"
-text_lavender = "#5e4453"
-text = "#3b3238"
-subtext0 = "#858287"
-overlay0 = "#acacb1"
-surface0 = "#dee2e6"
-base = "#edf2f6"
-crust = "#3b3238"
+red = "#B62D66"
+peach = "#DEB45B"
+yellow = "#DEB45B"
+green = "#FF7DBB"
+teal = "#DEB45B"
+sapphire = "#B62D66"
+blue = "#DEB45B"
+lavender = "#c8618c"
+mauve = "#B62D66"
+text_red = "#B62D66"
+text_green = "#4BB5BE"
+text_yellow = "#DEB45B"
+text_lavender = "#B62D66"
+text = "#B0CCDC"
+subtext0 = "#5A7387"
+overlay0 = "#3D5666"
+surface0 = "#1B324B"
+base = "#000000"
+crust = "#000000"
