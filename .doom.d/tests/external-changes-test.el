@@ -1,0 +1,76 @@
+(require 'ert)
+(require 'external-changes)
+
+(external-changes-mode 1)
+
+(defmacro external-changes-test--with-file (contents &rest body)
+  (declare (indent 1))
+  `(let* ((auto-revert-use-notify nil)
+          (auto-revert-verbose nil)
+          (file (make-temp-file "external-changes-test-" nil nil ,contents))
+          (buffer (find-file-noselect file)))
+     (unwind-protect
+         (with-current-buffer buffer
+           (auto-revert-mode 1)
+           ,@body)
+       (when (buffer-live-p buffer)
+         (with-current-buffer buffer (set-buffer-modified-p nil))
+         (kill-buffer buffer))
+       (delete-file file))))
+
+(defun external-changes-test--refresh (contents)
+  (let ((file buffer-file-name))
+    (with-temp-file file (insert contents)))
+  (setq auto-revert-notify-modified-p t)
+  (auto-revert-handler))
+
+(ert-deftest external-changes-reads-one-contiguous-block ()
+  (external-changes-test--with-file "old one\nold two\nunchanged\nold four\n"
+    (external-changes-test--refresh "new one\nnew two\nunchanged\nnew four\n")
+    (should (= (length external-changes--overlays) 2))
+    (goto-char (point-min))
+    (forward-line 1)
+    (external-changes--read-at-point)
+    (should (= (length external-changes--overlays) 1))
+    (should (= (line-number-at-pos (overlay-start (car external-changes--overlays))) 4))
+    (insert "typed here ")
+    (should (= (length external-changes--overlays) 1))))
+
+(ert-deftest external-changes-can-read-individual-lines ()
+  (let ((external-changes-contiguous-read nil))
+    (external-changes-test--with-file "old one\nold two\n"
+      (external-changes-test--refresh "new one\nnew two\n")
+      (should (= (length external-changes--overlays) 2))
+      (goto-char (point-min))
+      (external-changes--read-at-point)
+      (should (= (length external-changes--overlays) 1))
+      (should (= (line-number-at-pos (overlay-start (car external-changes--overlays))) 2)))))
+
+(ert-deftest external-changes-keeps-and-joins-unread-blocks-across-refreshes ()
+  (external-changes-test--with-file "one\ntwo\nthree\nfour\n"
+    (external-changes-test--refresh "ONE\ntwo\nthree\nfour\n")
+    (external-changes-test--refresh "ONE\nTWO\nthree\nFOUR\n")
+    (should (= (length external-changes--overlays) 2))
+    (goto-char (point-min))
+    (forward-line 1)
+    (external-changes--read-at-point)
+    (should (= (length external-changes--overlays) 1))
+    (should (= (line-number-at-pos (overlay-start (car external-changes--overlays))) 4))))
+
+(ert-deftest external-changes-preserves-unsaved-edits ()
+  (external-changes-test--with-file "original\n"
+    (goto-char (point-max))
+    (insert "my unsaved edit\n")
+    (external-changes-test--refresh "external edit\n")
+    (should (equal (buffer-string) "original\nmy unsaved edit\n"))
+    (should (buffer-modified-p))
+    (should-not external-changes--overlays)))
+
+(ert-deftest external-changes-marks-deletion-including-an-empty-file ()
+  (external-changes-test--with-file "deleted\n"
+    (external-changes-test--refresh "")
+    (should (= (length external-changes--overlays) 1))
+    (should (overlay-get (car external-changes--overlays) 'before-string))
+    (goto-char (point-min))
+    (external-changes--read-at-point)
+    (should-not external-changes--overlays)))

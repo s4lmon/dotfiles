@@ -84,6 +84,9 @@
   (setq auto-revert-use-notify t)
   (visible-auto-revert-mode 1))
 
+(load! "external-changes")
+(external-changes-mode 1)
+
 (after! corfu
   (setq corfu-auto-delay 0.2))
 
