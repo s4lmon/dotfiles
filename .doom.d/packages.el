@@ -10,3 +10,5 @@
 (package! gptel)
 (package! minuet)
 (package! difftastic)
+(package! visible-auto-revert
+  :recipe (:host github :repo "kn66/visible-auto-revert.el"))

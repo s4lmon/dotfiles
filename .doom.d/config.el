@@ -75,6 +75,15 @@
 (setq scroll-conservatively 101
       scroll-margin 3)
 
+(use-package! visible-auto-revert
+  :demand t
+  :config
+  (remove-hook 'doom-first-file-hook #'doom-auto-revert-mode)
+  (doom-auto-revert-mode -1)
+  (global-auto-revert-mode -1)
+  (setq auto-revert-use-notify t)
+  (visible-auto-revert-mode 1))
+
 (after! corfu
   (setq corfu-auto-delay 0.2))
 
