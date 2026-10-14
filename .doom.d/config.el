@@ -54,9 +54,9 @@
   (_ (setq doom-theme 'sunset-light)))
 
 (setq tron-legacy-theme-vivid-cursor t
-      doom-themes-padded-modeline t
-      doom-font (font-spec :family (if (eq system-type (quote darwin)) "JuliaMono" "monospace")
-                            :size 14))
+      doom-themes-padded-modeline t)
+
+(load! "fonts")
 
 (when (eq system-type (quote darwin))
   (setq frame-resize-pixelwise t
@@ -67,6 +67,8 @@
 
 ;; keep kitty's colours in lockstep with whatever theme Emacs is using
 (load! "kitty-theme")
+
+(load! "letters-banner")
 
 ;; major-mode leader on "," like Spacemacs
 (setq doom-localleader-key ","
@@ -112,14 +114,23 @@
                  forge-gitlab-repository)))
 
 ;; RET / click in magit diffs always visit the editable worktree file,
-;; never the read-only .~{index}~ / .~HEAD~ blob
+;; never the read-only .~{index}~ / .~HEAD~ blob, in the other window so magit stays put
+(defun my-magit-visit-file-reuse-window ()
+  "Visit the worktree file at point in an existing window, never a new split."
+  (interactive)
+  (magit-diff-visit-file--internal
+   t (lambda (buf)
+       (pop-to-buffer buf '((display-buffer-reuse-window display-buffer-use-some-window)
+                            (inhibit-same-window . t)
+                            (some-window . mru))))))
+
 (after! magit
   ;; status pops into a side-by-side window instead of taking the current one
   (setq magit-display-buffer-function #'magit-display-buffer-traditional)
-  (define-key magit-file-section-map (kbd "RET") #'magit-diff-visit-worktree-file)
-  (define-key magit-hunk-section-map (kbd "RET") #'magit-diff-visit-worktree-file)
-  (define-key magit-file-section-map [remap magit-visit-thing] #'magit-diff-visit-worktree-file)
-  (define-key magit-hunk-section-map [remap magit-visit-thing] #'magit-diff-visit-worktree-file))
+  (define-key magit-file-section-map (kbd "RET") #'my-magit-visit-file-reuse-window)
+  (define-key magit-hunk-section-map (kbd "RET") #'my-magit-visit-file-reuse-window)
+  (define-key magit-file-section-map [remap magit-visit-thing] #'my-magit-visit-file-reuse-window)
+  (define-key magit-hunk-section-map [remap magit-visit-thing] #'my-magit-visit-file-reuse-window))
 
 ;; Spacemacs-style window numbers (overrides Doom's SPC 1-9 workspace switching;
 ;; workspaces remain reachable via SPC TAB 1-9)
