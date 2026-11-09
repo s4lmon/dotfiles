@@ -14,6 +14,7 @@ fi
 [ -f "$HOME/.local/bin/env" ] && . "$HOME/.local/bin/env"   # uv
 [ -f "$HOME/.cargo/env" ]     && . "$HOME/.cargo/env"
 export PATH="$HOME/.local/bin:$PATH"
+[ -d "$HOME/dev/scripts" ] && export PATH="$HOME/dev/scripts:$PATH"
 [ -d /usr/local/lib/python3.12/dist-packages ] && export PATH="${PATH}:/usr/local/lib/python3.12/dist-packages"
 [ -d /usr/local/go/bin ] && export PATH=$PATH:/usr/local/go/bin
 [ -d "$HOME/go/bin" ]    && export PATH=$PATH:$HOME/go/bin

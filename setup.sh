@@ -119,6 +119,7 @@ link_common() {
   link .gitconfig
   link .zshenv
   link .config/atuin/config.toml
+  link dev/scripts
 }
 
 link_macos() {

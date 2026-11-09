@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+# devpod --num 8         -> hasan8 on radical-vp-gpu-8 (hasaneight if taken)
+# devpod --num 2 --debug -> extra flags go to devpod up
+# anything else goes to the real devpod
+set -euo pipefail
+
+self_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+real_devpod=""
+IFS=: read -ra path_dirs <<< "$PATH"
+for dir in "${path_dirs[@]}"; do
+    [[ "$(cd "$dir" 2>/dev/null && pwd)" == "$self_dir" ]] && continue
+    if [[ -x "$dir/devpod" ]]; then
+        real_devpod="$dir/devpod"
+        break
+    fi
+done
+[[ -n "$real_devpod" ]] || { echo "real devpod binary not found on PATH" >&2; exit 1; }
+
+[[ "${1:-}" == "--num" ]] || exec "$real_devpod" "$@"
+
+image="381492161858.dkr.ecr.us-east-1.amazonaws.com/radicalai/devpod-base:0.0.23"
+prefix="hasan"
+num="${2:?usage: devpod --num <1|2|4|8> [up flags...]}"
+shift 2
+
+declare -A words=([1]=one [2]=two [4]=four [8]=eight)
+[[ -n "${words[$num]:-}" ]] || { echo "num must be 1, 2, 4 or 8" >&2; exit 1; }
+
+existing="$("$real_devpod" list --output json | jq -r '.[]?.id')"
+name=""
+for candidate in "$prefix$num" "$prefix${words[$num]}"; do
+    if ! grep -qx "$candidate" <<< "$existing"; then
+        name="$candidate"
+        break
+    fi
+done
+[[ -n "$name" ]] || { echo "both $prefix$num and $prefix${words[$num]} already exist" >&2; exit 1; }
+
+# devpod pulls through the ecr-login helper, which needs a refreshable SSO token
+if ! docker-credential-ecr-login get <<< "${image%%/*}" &>/dev/null; then
+    aws sso login --sso-session radical
+fi
+
+echo "creating $name on radical-vp-gpu-$num"
+exec "$real_devpod" up "$name" \
+    --source "image:$image" \
+    --provider "radical-vp-gpu-$num" \
+    --ide none \
+    "$@"
