@@ -4,11 +4,11 @@
 # anything else goes to the real devpod
 set -euo pipefail
 
-self_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd)"
+self_dir="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")" && pwd -P)"
 real_devpod=""
 IFS=: read -ra path_dirs <<< "$PATH"
 for dir in "${path_dirs[@]}"; do
-    [[ "$(cd "$dir" 2>/dev/null && pwd)" == "$self_dir" ]] && continue
+    [[ "$(cd "$dir" 2>/dev/null && pwd -P)" == "$self_dir" ]] && continue
     if [[ -x "$dir/devpod" ]]; then
         real_devpod="$dir/devpod"
         break
